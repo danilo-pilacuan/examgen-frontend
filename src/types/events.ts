@@ -1,9 +1,9 @@
 /**
- * Tipos de eventos SSE/WS — espejo del contrato del backend.
+ * SSE/WS event types — mirror of the backend contract.
  *
  * Backend: projects/exam-app/src/exam_app/schemas/events.py
- * Agente:  projects/agents-backend/src/agents_backend/shared/events.py
- * Schema versionado (v) — ver docs/arquitectura-objetivo.md §5.
+ * Agent:   projects/agents-backend/src/agents_backend/shared/events.py
+ * Versioned schema (v) — see docs/arquitectura-objetivo.md §5.
  */
 import type { GeneratedItem, Question } from '@/types/domain'
 
@@ -23,7 +23,7 @@ export type EventType =
   | 'done'
   | 'error'
 
-/** Sobre estándar de un evento SSE/WS. */
+/** Standard envelope of an SSE/WS event. */
 export interface SSEEvent {
   v: number
   type: EventType
@@ -31,13 +31,13 @@ export interface SSEEvent {
   payload: Record<string, unknown>
 }
 
-/** Evento de token de texto. */
+/** Text token event. */
 export interface TokenEvent extends SSEEvent {
   type: 'token'
   payload: { delta: string }
 }
 
-/** Evento de tool en ejecución. */
+/** Running tool event. */
 export interface ToolStartEvent extends SSEEvent {
   type: 'tool_start'
   payload: { name: string; call_id: string }
@@ -48,60 +48,60 @@ export interface ToolEndEvent extends SSEEvent {
   payload: { name: string; call_id: string; result?: string }
 }
 
-/** Pregunta generada (HITL): tarjeta con acciones. */
+/** Generated question (HITL): card with actions. */
 export interface QuestionGeneratedEvent extends SSEEvent {
   type: 'question_generated'
   payload: { question: GeneratedItem }
 }
 
-/** Tabla interactiva de preguntas. */
+/** Interactive questions table. */
 export interface QuestionsListedEvent extends SSEEvent {
   type: 'questions_listed'
   payload: { questions: Question[]; total: number }
 }
 
-/** Card de artefacto descargable. */
+/** Downloadable artifact card. */
 export interface ArtifactReadyEvent extends SSEEvent {
   type: 'artifact_ready'
   payload: { kind: 'pdf' | 'csv' | 'xlsx'; url: string; filename: string; version?: number }
 }
 
-/** Toast de material indexado. */
+/** Indexed material toast. */
 export interface MaterialIndexedEvent extends SSEEvent {
   type: 'material_indexed'
   payload: { chunks: number; filename: string; subject_name: string }
 }
 
-/** Pregunta guardada en el banco. */
+/** Question saved to the bank. */
 export interface QuestionSavedEvent extends SSEEvent {
   type: 'question_saved'
   payload: { question_id: string; verified_by_human: boolean }
 }
 
-/** Materia registrada. */
+/** Registered subject. */
 export interface SubjectRegisteredEvent extends SSEEvent {
   type: 'subject_registered'
   payload: { subject_id: string; subject_name: string }
 }
 
-/** Cancelación vía WS. */
+/** Cancellation via WS. */
 export interface CancelledEvent extends SSEEvent {
   type: 'cancelled'
   payload: { message: string }
 }
 
-/** Fin del turno. */
+/** End of the turn. */
 export interface DoneEvent extends SSEEvent {
   type: 'done'
 }
 
-/** Error del turno. */
+/** Turn error. */
 export interface ErrorEvent extends SSEEvent {
   type: 'error'
   payload: { message: string }
 }
 
-/** Unión de todos los eventos posibles. */
+/** Union of all possible events. */
 export type ChatEvent =
   | TokenEvent
   | ToolStartEvent

@@ -2,6 +2,9 @@
 import { ref, watch, nextTick } from 'vue'
 import type { ChatMessage } from '@/stores/chat'
 import MarkdownRenderer from '@/components/chat/MarkdownRenderer.vue'
+import QuestionCard from '@/components/widgets/QuestionCard.vue'
+import QuestionsTable from '@/components/widgets/QuestionsTable.vue'
+import ArtifactCard from '@/components/widgets/ArtifactCard.vue'
 
 const props = defineProps<{ messages: ChatMessage[] }>()
 
@@ -30,10 +33,30 @@ defineExpose({ scrollToBottom })
 <template>
   <div ref="listRef" class="message-list">
     <div v-if="messages.length === 0" class="empty-state">
-      <p>💬 Empieza una conversación con el agente.</p>
+      <p>💬 Start a conversation with the agent.</p>
     </div>
     <div v-for="msg in messages" :key="msg.id" class="message" :class="msg.role">
       <div class="bubble">
+        <template v-for="(event, i) in msg.events" :key="i">
+          <!-- Interactive widgets (rendered in order of arrival) -->
+          <QuestionCard
+            v-if="event.type === 'question_generated'"
+            :question="event.payload.question"
+          />
+          <QuestionsTable
+            v-else-if="event.type === 'questions_listed'"
+            :questions="event.payload.questions"
+            :total="event.payload.total"
+          />
+          <ArtifactCard
+            v-else-if="event.type === 'artifact_ready'"
+            :kind="event.payload.kind"
+            :url="event.payload.url"
+            :filename="event.payload.filename"
+            :version="event.payload.version"
+          />
+        </template>
+
         <MarkdownRenderer :source="msg.content" />
         <span v-if="msg.streaming" class="cursor">▍</span>
       </div>

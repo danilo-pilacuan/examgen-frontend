@@ -1,10 +1,9 @@
-/** Cliente REST: fetch wrapper con error handling.
+/** REST client: fetch wrapper with error handling.
  *
- * Único punto que conoce la URL del backend (VITE_API_URL).
+ * Single point that knows the backend URL (see api/env.ts).
  */
 import { SCHEMA_VERSION } from '@/types/events'
-
-const API_URL: string = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
+import { API_URL } from '@/api/env'
 
 export class ApiError extends Error {
   constructor(
@@ -22,7 +21,7 @@ async function parseError(response: Response): Promise<never> {
     const body = await response.json()
     if (body && typeof body.detail === 'string') detail = body.detail
   } catch {
-    // respuesta sin JSON
+    // response without JSON
   }
   throw new ApiError(response.status, detail)
 }

@@ -22,10 +22,10 @@ async function onFileChange(event: Event) {
 <template>
   <div class="file-upload">
     <input ref="fileInput" type="file" accept=".pdf,.txt,.md,.tex" hidden @change="onFileChange" />
-    <button type="button" @click="fileInput?.click()">📎 Adjuntar material</button>
-    <span v-if="chat.uploading" class="status">Indexando…</span>
+    <button type="button" @click="fileInput?.click()">📎 Attach material</button>
+    <span v-if="chat.uploading" class="status">Indexing…</span>
     <span v-else-if="chat.lastUpload" class="status ok">
-      {{ chat.lastUpload.chunks_indexed }} fragmentos indexados
+      {{ chat.lastUpload.chunks_indexed }} chunks indexed
     </span>
   </div>
 </template>

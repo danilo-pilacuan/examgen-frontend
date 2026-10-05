@@ -1,7 +1,6 @@
-/** Cliente WS con reconexión automática (backoff exponencial). */
+/** WS client with automatic reconnection (exponential backoff). */
 import type { ChatEvent } from '@/types/events'
-
-const WS_URL: string = import.meta.env.VITE_WS_URL ?? 'ws://localhost:8000/ws'
+import { WS_URL } from '@/api/env'
 
 export type WSMessage = { type: 'cancel'; thread_id: string } | { type: 'ping'; thread_id?: string }
 
@@ -36,7 +35,7 @@ export class WSClient {
         const data = JSON.parse(ev.data as string) as ChatEvent
         this.options.onEvent(data)
       } catch {
-        // frame inválido: ignorar
+        // invalid frame: ignore
       }
     }
     this.ws.onclose = () => {

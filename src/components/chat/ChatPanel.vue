@@ -5,9 +5,14 @@ import { useChatStream } from '@/composables/useChatStream'
 import { useThreadId } from '@/composables/useThreadId'
 import MessageList from '@/components/chat/MessageList.vue'
 import ToolActivity from '@/components/chat/ToolActivity.vue'
+import FileDrop from '@/components/chat/FileDrop.vue'
+import MaterialToast from '@/components/widgets/MaterialToast.vue'
 
 const chat = useChatStore()
 const { touchThread, createThread } = useThreadId()
+
+const toastShow = ref(false)
+const toastMessage = ref('')
 
 const {
   streaming,
@@ -18,6 +23,10 @@ const {
     if (event.type === 'token') {
       const delta = event.payload.delta ?? ''
       if (assistantId.value) chat.appendToMessage(assistantId.value, delta)
+    } else if (event.type === 'material_indexed') {
+      toastMessage.value = `📚 ${event.payload.filename}: ${event.payload.chunks} chunks indexed`
+      toastShow.value = true
+      if (assistantId.value) chat.appendEventToMessage(assistantId.value, event)
     } else if (event.type !== 'done') {
       if (assistantId.value) chat.appendEventToMessage(assistantId.value, event)
     }
@@ -39,7 +48,7 @@ async function send() {
   if (!message || streaming.value) return
   input.value = ''
 
-  // Asegurar thread_id: reutiliza el activo o crea una conversación nueva.
+  // Ensure thread_id: reuse the active one or create a new conversation.
   let threadId = chat.threadId
   if (!threadId) {
     threadId = createThread(message.slice(0, 40)).threadId
@@ -77,15 +86,17 @@ function scrollToBottom() {
     <form class="chat-input" @submit.prevent="send">
       <textarea
         v-model="input"
-        placeholder="Escribe tu mensaje… (Enter para enviar)"
+        placeholder="Type your message… (Enter to send)"
         rows="2"
         @keydown.enter.exact.prevent="send"
       />
       <div class="chat-actions">
-        <button v-if="streaming" type="button" class="stop" @click="stop">Detener</button>
-        <button type="submit" :disabled="!canSend">Enviar</button>
+        <button v-if="streaming" type="button" class="stop" @click="stop">Stop</button>
+        <button type="submit" :disabled="!canSend">Send</button>
       </div>
     </form>
+    <FileDrop />
+    <MaterialToast v-model:show="toastShow" :message="toastMessage" />
   </div>
 </template>
 

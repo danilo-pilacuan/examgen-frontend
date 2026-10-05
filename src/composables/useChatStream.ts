@@ -3,8 +3,8 @@ import { chatStream } from '@/api/sse'
 import type { ChatEvent } from '@/types/events'
 
 /**
- * Composable del chat: consume el stream SSE y expone el estado de streaming.
- * Los eventos se delegan al store del chat vía callbacks.
+ * Chat composable: consumes the SSE stream and exposes the streaming state.
+ * Events are delegated to the chat store via callbacks.
  */
 export interface UseChatStreamOptions {
   onEvent: (event: ChatEvent) => void

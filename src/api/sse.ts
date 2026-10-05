@@ -1,11 +1,10 @@
-/** Cliente SSE para el chat: consume POST /api/chat/stream con fetch-stream.
+/** SSE client for the chat: consumes POST /api/chat/stream with fetch-stream.
  *
- * EventSource nativo no soporta POST, así que usamos fetch + ReadableStream
- * y parseamos los frames `event:`/`data:` manualmente.
+ * Native EventSource doesn't support POST, so we use fetch + ReadableStream
+ * and parse the `event:`/`data:` frames manually.
  */
 import type { ChatEvent } from '@/types/events'
-
-const API_URL: string = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
+import { API_URL } from '@/api/env'
 
 export interface ChatStreamOptions {
   message: string
@@ -55,7 +54,7 @@ export async function* chatStream(options: ChatStreamOptions): AsyncGenerator<Ch
     signal,
   })
   if (!response.ok || !response.body) {
-    throw new Error(`Error en el stream: ${response.status}`)
+    throw new Error(`Stream error: ${response.status}`)
   }
 
   const reader = response.body.getReader()
@@ -73,7 +72,7 @@ export async function* chatStream(options: ChatStreamOptions): AsyncGenerator<Ch
         const data = JSON.parse(frame.data) as ChatEvent
         yield data
       } catch {
-        // frame inválido: ignorar
+        // invalid frame: ignore
       }
     }
   }

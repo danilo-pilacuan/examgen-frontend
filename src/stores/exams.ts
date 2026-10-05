@@ -1,4 +1,4 @@
-/** Store de exámenes generados. */
+/** Store of generated exams. */
 import { defineStore } from 'pinia'
 import { apiFetch } from '@/api/http'
 import type { Exam } from '@/types/domain'

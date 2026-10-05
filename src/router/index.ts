@@ -10,18 +10,18 @@ const router = createRouter({
       component: ChatView,
     },
     {
-      path: '/materias',
-      name: 'materias',
+      path: '/subjects',
+      name: 'subjects',
       component: () => import('@/views/SubjectsView.vue'),
     },
     {
-      path: '/banco',
-      name: 'banco',
+      path: '/bank',
+      name: 'bank',
       component: () => import('@/views/BankView.vue'),
     },
     {
-      path: '/examenes',
-      name: 'examenes',
+      path: '/exams',
+      name: 'exams',
       component: () => import('@/views/ExamsView.vue'),
     },
     {

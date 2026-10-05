@@ -9,7 +9,7 @@ const subjects = useSubjectsStore()
 
 onMounted(() => {
   subjects.fetch().catch(() => {
-    // sin conexión al backend: la vista mostrará el estado vacío
+    // no backend connection: the view will show the empty state
   })
 })
 </script>
@@ -18,18 +18,18 @@ onMounted(() => {
   <div class="app-layout">
     <aside class="sidebar">
       <div class="sidebar-brand">
-        <h1>🎓 Generador de Exámenes</h1>
+        <h1>🎓 Exam Generator</h1>
       </div>
       <nav class="sidebar-nav">
         <RouterLink to="/" class="nav-item">💬 Chat</RouterLink>
-        <RouterLink to="/materias" class="nav-item">📚 Materias</RouterLink>
-        <RouterLink to="/banco" class="nav-item">📝 Banco</RouterLink>
-        <RouterLink to="/examenes" class="nav-item">📄 Exámenes</RouterLink>
+        <RouterLink to="/subjects" class="nav-item">📚 Subjects</RouterLink>
+        <RouterLink to="/bank" class="nav-item">📝 Bank</RouterLink>
+        <RouterLink to="/exams" class="nav-item">📄 Exams</RouterLink>
         <RouterLink to="/material" class="nav-item">📁 Material</RouterLink>
       </nav>
       <div class="sidebar-footer">
         <span class="active-subject" v-if="chat.activeSubjectName">
-          Materia activa: <strong>{{ chat.activeSubjectName }}</strong>
+          Active subject: <strong>{{ chat.activeSubjectName }}</strong>
         </span>
       </div>
     </aside>

@@ -1,4 +1,4 @@
-/** Store del chat: mensajes, thread_id, estado de streaming, eventos de tools. */
+/** Chat store: messages, thread_id, streaming state, tool events. */
 import { defineStore } from 'pinia'
 import { apiFetch } from '@/api/http'
 import type { ChatEvent } from '@/types/events'
@@ -37,15 +37,15 @@ function nextMessageId(): string {
 }
 
 const EVENT_LABELS: Record<string, string> = {
-  tool_start: 'Ejecutando herramienta…',
-  tool_end: 'Herramienta completada',
-  question_generated: 'Pregunta generada',
-  questions_listed: 'Preguntas listadas',
-  artifact_ready: 'Artefacto listo para descargar',
-  material_indexed: 'Material indexado',
-  question_saved: 'Pregunta guardada',
-  subject_registered: 'Materia registrada',
-  cancelled: 'Cancelado',
+  tool_start: 'Running tool…',
+  tool_end: 'Tool finished',
+  question_generated: 'Question generated',
+  questions_listed: 'Questions listed',
+  artifact_ready: 'Artifact ready to download',
+  material_indexed: 'Material indexed',
+  question_saved: 'Question saved',
+  subject_registered: 'Subject registered',
+  cancelled: 'Cancelled',
   error: 'Error',
 }
 

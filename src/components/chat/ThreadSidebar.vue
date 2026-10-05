@@ -7,7 +7,7 @@ const { threads, currentThreadId, createThread, selectThread, removeThread } = u
 
 function newThread() {
   chat.reset()
-  const thread = createThread('Nueva conversación')
+  const thread = createThread('New conversation')
   chat.threadId = thread.threadId
 }
 
@@ -24,7 +24,7 @@ function remove(threadId: string) {
 
 <template>
   <aside class="sidebar">
-    <button class="new-chat" @click="newThread">+ Nueva conversación</button>
+    <button class="new-chat" @click="newThread">+ New conversation</button>
     <ul class="thread-list">
       <li
         v-for="t in threads"

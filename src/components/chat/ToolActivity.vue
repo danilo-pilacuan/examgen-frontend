@@ -7,7 +7,7 @@ const props = defineProps<{ streaming: boolean }>()
 const chat = useChatStore()
 
 const activity = computed(() => {
-  if (props.streaming && !chat.lastEventLabel) return 'Pensando…'
+  if (props.streaming && !chat.lastEventLabel) return 'Thinking…'
   return chat.lastEventLabel
 })
 </script>

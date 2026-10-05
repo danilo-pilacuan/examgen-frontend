@@ -1,4 +1,4 @@
-/** Gestión de thread_id: persistencia por conversación en localStorage. */
+/** thread_id management: per-conversation persistence in localStorage. */
 import { ref, watch } from 'vue'
 
 const STORAGE_KEY = 'mvp_chat_threads'
@@ -25,7 +25,7 @@ function saveThreads(threads: ChatThreadMeta[]) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(threads))
 }
 
-// Estado compartido entre todas las instancias del composable (singleton).
+// Shared state across all instances of the composable (singleton).
 const threads = ref<ChatThreadMeta[]>(loadThreads())
 const currentThreadId = ref<string | null>(threads.value[0]?.threadId ?? null)
 
@@ -61,7 +61,7 @@ export function useThreadId() {
     if (thread) {
       thread.updatedAt = new Date().toISOString()
       if (title) thread.title = title
-      // Mover al frente (más reciente primero)
+      // Move to the front (most recent first)
       threads.value = [thread, ...threads.value.filter((t) => t.threadId !== thread.threadId)]
     }
   }

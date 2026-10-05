@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
+const { t } = useI18n()
 const props = defineProps<{
   kind: 'pdf' | 'csv' | 'xlsx'
   url: string
@@ -28,7 +30,7 @@ const label = computed(() => {
       <span class="label">{{ label }}<template v-if="version"> · v{{ version }}</template></span>
       <span class="filename">{{ filename }}</span>
     </div>
-    <a :href="url" download class="download">⬇️ Download</a>
+    <a :href="url" download class="download">⬇️ {{ t('artifact.download') }}</a>
   </div>
 </template>
 

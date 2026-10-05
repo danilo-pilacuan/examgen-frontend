@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useSubjectsStore } from '@/stores/subjects'
 import { useChatStore } from '@/stores/chat'
 import { useMaterialStore } from '@/stores/material'
 import { apiFetch } from '@/api/http'
 
+const { t } = useI18n()
 const subjects = useSubjectsStore()
 const chat = useChatStore()
 const material = useMaterialStore()
@@ -52,31 +54,30 @@ function toggleMaterial(id: string) {
 <template>
   <div class="subjects-view">
     <div class="header">
-      <h2>📚 Subjects</h2>
+      <h2>📚 {{ t('subjects.title') }}</h2>
       <button type="button" class="new" @click="showForm = !showForm">
-        {{ showForm ? 'Cancel' : '+ New subject' }}
+        {{ showForm ? t('subjects.cancel') : t('subjects.new') }}
       </button>
     </div>
     <p class="hint">
-      Register subjects here or by chatting with the agent in the Chat. The active subject is used
-      to generate questions and exams.
+      {{ t('subjects.hint') }}
     </p>
 
     <form v-if="showForm" class="form" @submit.prevent="create">
       <input
         v-model="newName"
         type="text"
-        placeholder="Subject name (e.g. Calculus I)"
+        :placeholder="t('subjects.placeholder')"
         required
       />
       <button type="submit" :disabled="creating || !newName.trim()">
-        {{ creating ? 'Creating…' : 'Register' }}
+        {{ creating ? t('subjects.creating') : t('subjects.register') }}
       </button>
     </form>
 
-    <div v-if="subjects.loading" class="loading">Loading…</div>
+    <div v-if="subjects.loading" class="loading">{{ t('subjects.loading') }}</div>
     <div v-else-if="subjects.subjects.length === 0" class="empty">
-      No subjects registered yet.
+      {{ t('subjects.empty') }}
     </div>
     <ul v-else class="subject-list">
       <li
@@ -88,22 +89,22 @@ function toggleMaterial(id: string) {
           <span class="name">{{ s.name }}</span>
           <div class="actions">
             <button type="button" class="ghost" @click="toggleMaterial(s.id)">
-              {{ materialFor === s.id ? 'Hide material' : 'Material' }}
+              {{ materialFor === s.id ? t('subjects.hideMaterial') : t('subjects.material') }}
             </button>
             <button
               v-if="s.id !== subjects.activeSubjectId"
               type="button"
               @click="activate(s.id, s.name)"
             >
-              Activate
+              {{ t('subjects.activate') }}
             </button>
-            <span v-else class="badge">Active</span>
+            <span v-else class="badge">{{ t('subjects.active') }}</span>
           </div>
         </div>
         <div v-if="materialFor === s.id" class="material-panel">
-          <div v-if="material.loading" class="loading">Loading material…</div>
+          <div v-if="material.loading" class="loading">{{ t('subjects.loadingMaterial') }}</div>
           <div v-else-if="material.chunks.length === 0" class="empty">
-            No indexed material. Upload files from the Chat.
+            {{ t('subjects.noMaterial') }}
           </div>
           <ul v-else class="chunk-list">
             <li v-for="chunk in material.chunks.slice(0, 5)" :key="chunk.id">

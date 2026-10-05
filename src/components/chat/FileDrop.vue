@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useChatStore } from '@/stores/chat'
 
+const { t } = useI18n()
 const chat = useChatStore()
 const fileInput = ref<HTMLInputElement | null>(null)
 const dragOver = ref(false)
@@ -54,12 +56,14 @@ function onFileChange(event: Event) {
       hidden
       @change="onFileChange"
     />
-    <button type="button" class="attach" @click="fileInput?.click()">📎 Attach material</button>
-    <span v-if="chat.uploading" class="status">Indexing…</span>
+    <button type="button" class="attach" @click="fileInput?.click()">
+      📎 {{ t('chat.attachMaterial') }}
+    </button>
+    <span v-if="chat.uploading" class="status">{{ t('chat.indexing') }}</span>
     <span v-else-if="chat.lastUpload" class="status ok">
-      ✅ {{ chat.lastUpload.chunks_indexed }} chunks indexed
+      ✅ {{ t('chat.chunksIndexed', { n: chat.lastUpload.chunks_indexed }) }}
     </span>
-    <span v-else class="hint">or drag a file here</span>
+    <span v-else class="hint">{{ t('chat.orDragFile') }}</span>
   </div>
 </template>
 

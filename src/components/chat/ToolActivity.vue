@@ -1,13 +1,15 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useChatStore } from '@/stores/chat'
 
 const props = defineProps<{ streaming: boolean }>()
 
+const { t } = useI18n()
 const chat = useChatStore()
 
 const activity = computed(() => {
-  if (props.streaming && !chat.lastEventLabel) return 'Thinking…'
+  if (props.streaming && !chat.lastEventLabel) return t('chat.thinking')
   return chat.lastEventLabel
 })
 </script>

@@ -1,5 +1,6 @@
 /** Chat store: messages, thread_id, streaming state, tool events. */
 import { defineStore } from 'pinia'
+import i18n from '@/i18n'
 import { apiFetch } from '@/api/http'
 import type { ChatEvent } from '@/types/events'
 import type { GeneratedItem } from '@/types/domain'
@@ -36,17 +37,25 @@ function nextMessageId(): string {
   return `msg-${Date.now()}-${messageSeq}`
 }
 
-const EVENT_LABELS: Record<string, string> = {
-  tool_start: 'Running tool…',
-  tool_end: 'Tool finished',
-  question_generated: 'Question generated',
-  questions_listed: 'Questions listed',
-  artifact_ready: 'Artifact ready to download',
-  material_indexed: 'Material indexed',
-  question_saved: 'Question saved',
-  subject_registered: 'Subject registered',
-  cancelled: 'Cancelled',
-  error: 'Error',
+const EVENT_KEYS = [
+  'tool_start',
+  'tool_end',
+  'question_generated',
+  'questions_listed',
+  'artifact_ready',
+  'material_indexed',
+  'question_saved',
+  'subject_registered',
+  'cancelled',
+  'error',
+] as const
+
+function eventLabel(type: string): string {
+  if ((EVENT_KEYS as readonly string[]).includes(type)) {
+    const key = type as (typeof EVENT_KEYS)[number]
+    return i18n.global.t(`chat.events.${key}`)
+  }
+  return type
 }
 
 export const useChatStore = defineStore('chat', {
@@ -82,7 +91,7 @@ export const useChatStore = defineStore('chat', {
     appendEventToMessage(id: string, event: ChatEvent) {
       const msg = this.messages.find((m) => m.id === id)
       if (msg) msg.events.push(event)
-      this.lastEventLabel = EVENT_LABELS[event.type] ?? event.type
+      this.lastEventLabel = eventLabel(event.type)
       if (event.type === 'question_generated') {
         const q = event.payload.question
         if (q) this.pendingQuestion = q

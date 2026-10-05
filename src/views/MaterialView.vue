@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { onMounted, ref, watch, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useMaterialStore } from '@/stores/material'
 import { useSubjectsStore } from '@/stores/subjects'
 import { apiFetch } from '@/api/http'
 
+const { t } = useI18n()
 const material = useMaterialStore()
 const subjects = useSubjectsStore()
 
@@ -47,10 +49,10 @@ async function uploadFile(event: Event) {
       method: 'POST',
       body: form,
     })
-    uploadMessage.value = `✅ ${file.name}: ${res.chunks_indexed} chunks indexed`
+    uploadMessage.value = t('material.chunksIndexed', { filename: file.name, n: res.chunks_indexed })
     await material.fetch(subjects.activeSubjectId)
   } catch (e) {
-    uploadMessage.value = `⚠️ ${e instanceof Error ? e.message : 'Upload error'}`
+    uploadMessage.value = `⚠️ ${e instanceof Error ? e.message : t('material.uploadError')}`
   } finally {
     uploading.value = false
     target.value = ''
@@ -60,8 +62,8 @@ async function uploadFile(event: Event) {
 async function deleteMaterial(sourceFile: string | null) {
   if (!subjects.activeSubjectId) return
   const msg = sourceFile
-    ? `Delete the material "${sourceFile}"?`
-    : 'Delete ALL material for this subject?'
+    ? t('material.confirmDelete', { file: sourceFile })
+    : t('material.confirmDeleteAll')
   if (!confirm(msg)) return
   try {
     await apiFetch(`/subjects/${subjects.activeSubjectId}/material`, {
@@ -82,28 +84,28 @@ async function deleteMaterial(sourceFile: string | null) {
 <template>
   <div class="material-view">
     <div class="header">
-      <h2>📁 Indexed material</h2>
+      <h2>📁 {{ t('material.title') }}</h2>
       <label v-if="subjects.activeSubjectId" class="upload-btn" :class="{ uploading }">
         <input type="file" accept=".pdf,.txt,.md,.tex,.docx,.pptx,.xlsx" hidden @change="uploadFile" />
-        {{ uploading ? 'Uploading…' : '⬆️ Upload file' }}
+        {{ uploading ? t('material.uploading') : `⬆️ ${t('material.upload')}` }}
       </label>
     </div>
 
     <p v-if="uploadMessage" class="message">{{ uploadMessage }}</p>
 
     <div v-if="!subjects.activeSubjectId" class="empty">
-      Activate a subject first (Subjects view).
+      {{ t('material.needSubject') }}
     </div>
     <template v-else>
-      <div v-if="material.loading" class="loading">Loading…</div>
+      <div v-if="material.loading" class="loading">{{ t('material.loading') }}</div>
       <div v-else-if="material.chunks.length === 0" class="empty">
-        No indexed material. Upload files here or from the Chat.
+        {{ t('material.empty') }}
       </div>
       <ul v-else class="source-list">
         <li v-for="src in sources" :key="src.file">
           <div class="source-header" @click="expandedFile = expandedFile === src.file ? null : src.file">
             <strong>{{ src.file }}</strong>
-            <span class="count">{{ src.count }} chunks</span>
+            <span class="count">{{ src.count }} {{ t('material.chunks') }}</span>
           </div>
           <template v-if="expandedFile === src.file">
             <ul class="chunks">
@@ -115,7 +117,7 @@ async function deleteMaterial(sourceFile: string | null) {
           </template>
           <div class="source-actions">
             <button type="button" class="danger" @click.stop="deleteMaterial(src.file)">
-              🗑 Delete
+              🗑 {{ t('material.delete') }}
             </button>
           </div>
         </li>
@@ -126,7 +128,7 @@ async function deleteMaterial(sourceFile: string | null) {
         class="delete-all"
         @click="deleteMaterial(null)"
       >
-        🗑 Delete all material
+        🗑 {{ t('material.deleteAll') }}
       </button>
     </template>
   </div>

@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type { Question } from '@/types/domain'
 
+const { t } = useI18n()
 const props = defineProps<{
   questions: Question[]
   total?: number
@@ -58,11 +60,11 @@ function showDetail(question: Question) {
   <div class="questions-table">
     <div class="table-header">
       <span class="icon">📋</span>
-      <span class="title">Question bank ({{ total ?? questions.length }})</span>
+      <span class="title">{{ t('questionsTable.title', { n: total ?? questions.length }) }}</span>
       <input
         v-model="filterText"
         type="search"
-        placeholder="Filter…"
+        :placeholder="t('questionsTable.filter')"
         class="filter"
       />
     </div>
@@ -71,11 +73,11 @@ function showDetail(question: Question) {
       <table>
         <thead>
           <tr>
-            <th @click="sortBy('topic')">Topic</th>
-            <th @click="sortBy('question_type')">Type</th>
-            <th @click="sortBy('bloom_level')">Bloom</th>
-            <th @click="sortBy('difficulty')">Difficulty</th>
-            <th @click="sortBy('verified_by_human')">Verified</th>
+            <th @click="sortBy('topic')">{{ t('questionsTable.topic') }}</th>
+            <th @click="sortBy('question_type')">{{ t('questionsTable.type') }}</th>
+            <th @click="sortBy('bloom_level')">{{ t('questionsTable.bloom') }}</th>
+            <th @click="sortBy('difficulty')">{{ t('questionsTable.difficulty') }}</th>
+            <th @click="sortBy('verified_by_human')">{{ t('questionsTable.verified') }}</th>
           </tr>
         </thead>
         <tbody>
@@ -86,12 +88,12 @@ function showDetail(question: Question) {
             <td>{{ q.difficulty }}</td>
             <td>
               <span :class="q.verified_by_human ? 'ok' : 'warn'">
-                {{ q.verified_by_human ? '✔ Human' : '⏳ Pending' }}
+                {{ q.verified_by_human ? `✔ ${t('questionsTable.human')}` : `⏳ ${t('questionsTable.pending')}` }}
               </span>
             </td>
           </tr>
           <tr v-if="sorted.length === 0">
-            <td colspan="5" class="empty">No results</td>
+            <td colspan="5" class="empty">{{ t('questionsTable.noResults') }}</td>
           </tr>
         </tbody>
       </table>

@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useExamsStore } from '@/stores/exams'
 import { useSubjectsStore } from '@/stores/subjects'
 import { apiFetch } from '@/api/http'
 
+const { t } = useI18n()
 const exams = useExamsStore()
 const subjects = useSubjectsStore()
 
@@ -15,16 +17,16 @@ const duration = ref(90)
 const title = ref('')
 
 const BLOOM_PRESETS = [
-  { label: 'Balanced', dist: { remember: 0.2, understand: 0.2, apply: 0.2, analyze: 0.2, evaluate: 0.1, create: 0.1 } },
-  { label: 'Basic', dist: { remember: 0.4, understand: 0.3, apply: 0.2, analyze: 0.1, evaluate: 0, create: 0 } },
-  { label: 'Advanced', dist: { remember: 0.1, understand: 0.1, apply: 0.2, analyze: 0.2, evaluate: 0.2, create: 0.2 } },
+  { key: 'balanced', dist: { remember: 0.2, understand: 0.2, apply: 0.2, analyze: 0.2, evaluate: 0.1, create: 0.1 } },
+  { key: 'basic', dist: { remember: 0.4, understand: 0.3, apply: 0.2, analyze: 0.1, evaluate: 0, create: 0 } },
+  { key: 'advanced', dist: { remember: 0.1, understand: 0.1, apply: 0.2, analyze: 0.2, evaluate: 0.2, create: 0.2 } },
 ]
 const bloomPreset = ref(0)
 
 const DIFFICULTY_PRESETS = [
-  { label: 'Balanced', dist: { easy: 0.34, medium: 0.33, hard: 0.33 } },
-  { label: 'Easy', dist: { easy: 0.6, medium: 0.3, hard: 0.1 } },
-  { label: 'Hard', dist: { easy: 0.1, medium: 0.3, hard: 0.6 } },
+  { key: 'balanced', dist: { easy: 0.34, medium: 0.33, hard: 0.33 } },
+  { key: 'easy', dist: { easy: 0.6, medium: 0.3, hard: 0.1 } },
+  { key: 'hard', dist: { easy: 0.1, medium: 0.3, hard: 0.6 } },
 ]
 const difficultyPreset = ref(0)
 
@@ -64,7 +66,7 @@ async function generate() {
           topics_weight: { general: 1.0 },
           estimated_duration_minutes: duration.value,
           metadata: {
-            title: title.value || 'Exam',
+            title: title.value || t('exams.defaultTitle'),
             num_versions: numVersions.value,
           },
         },
@@ -85,71 +87,73 @@ async function generate() {
 <template>
   <div class="exams-view">
     <div class="header">
-      <h2>📄 Exams</h2>
+      <h2>📄 {{ t('exams.title') }}</h2>
       <button
         v-if="subjects.activeSubjectId"
         type="button"
         class="new"
         @click="showForm = !showForm"
       >
-        {{ showForm ? 'Cancel' : '+ Generate exam' }}
+        {{ showForm ? t('exams.cancel') : t('exams.generate') }}
       </button>
     </div>
 
     <div v-if="!subjects.activeSubjectId" class="empty">
-      Activate a subject first (Subjects view).
+      {{ t('exams.needSubject') }}
     </div>
     <template v-else>
       <form v-if="showForm" class="form" @submit.prevent="generate">
         <div class="field">
-          <label>Title</label>
-          <input v-model="title" type="text" placeholder="Midterm Exam" />
+          <label>{{ t('exams.titleLabel') }}</label>
+          <input v-model="title" type="text" :placeholder="t('exams.titlePlaceholder')" />
         </div>
         <div class="field-row">
           <div class="field">
-            <label>Nº of questions</label>
+            <label>{{ t('exams.numQuestions') }}</label>
             <input v-model.number="totalQuestions" type="number" min="1" max="50" required />
           </div>
           <div class="field">
-            <label>Versions (anti-copy)</label>
+            <label>{{ t('exams.versions') }}</label>
             <input v-model.number="numVersions" type="number" min="1" max="10" />
           </div>
           <div class="field">
-            <label>Duration (min)</label>
+            <label>{{ t('exams.duration') }}</label>
             <input v-model.number="duration" type="number" min="10" max="300" />
           </div>
         </div>
         <div class="field-row">
           <div class="field">
-            <label>Bloom</label>
+            <label>{{ t('exams.bloom') }}</label>
             <select v-model.number="bloomPreset">
-              <option v-for="(p, i) in BLOOM_PRESETS" :key="i" :value="i">{{ p.label }}</option>
+              <option v-for="(p, i) in BLOOM_PRESETS" :key="i" :value="i">
+                {{ t(`exams.presets.${p.key}`) }}
+              </option>
             </select>
           </div>
           <div class="field">
-            <label>Difficulty</label>
+            <label>{{ t('exams.difficulty') }}</label>
             <select v-model.number="difficultyPreset">
               <option v-for="(p, i) in DIFFICULTY_PRESETS" :key="i" :value="i">
-                {{ p.label }}
+                {{ t(`exams.presets.${p.key}`) }}
               </option>
             </select>
           </div>
         </div>
         <button type="submit" class="submit" :disabled="generating">
-          {{ generating ? 'Generating… (may take a while)' : 'Generate exam' }}
+          {{ generating ? t('exams.generating') : t('exams.generateBtn') }}
         </button>
       </form>
 
-      <div v-if="exams.loading" class="loading">Loading…</div>
+      <div v-if="exams.loading" class="loading">{{ t('exams.loading') }}</div>
       <div v-else-if="exams.exams.length === 0" class="empty">
-        No exams generated yet. Ask the agent: "Generate a 10-question exam".
+        {{ t('exams.empty') }}
       </div>
       <ul v-else class="exam-list">
         <li v-for="exam in exams.exams" :key="exam.id">
           <div class="exam-info">
-            <strong>{{ exam.blueprint.metadata?.title ?? 'Exam' }}</strong>
+            <strong>{{ exam.blueprint.metadata?.title ?? t('exams.defaultTitle') }}</strong>
             <span class="meta">
-              {{ exam.items.length }} questions ·
+              {{ exam.items.length }} {{ t('exams.questions') }} ·
               {{ new Date(exam.created_at).toLocaleString() }}
             </span>
           </div>

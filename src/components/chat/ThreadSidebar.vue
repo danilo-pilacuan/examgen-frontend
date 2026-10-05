@@ -1,13 +1,15 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { useChatStore } from '@/stores/chat'
 import { useThreadId } from '@/composables/useThreadId'
 
+const { t } = useI18n()
 const chat = useChatStore()
 const { threads, currentThreadId, createThread, selectThread, removeThread } = useThreadId()
 
 function newThread() {
   chat.reset()
-  const thread = createThread('New conversation')
+  const thread = createThread(t('chat.newConversation'))
   chat.threadId = thread.threadId
 }
 
@@ -24,7 +26,7 @@ function remove(threadId: string) {
 
 <template>
   <aside class="sidebar">
-    <button class="new-chat" @click="newThread">+ New conversation</button>
+    <button class="new-chat" @click="newThread">+ {{ t('chat.newConversation') }}</button>
     <ul class="thread-list">
       <li
         v-for="t in threads"

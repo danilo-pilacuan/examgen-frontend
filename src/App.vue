@@ -1,11 +1,23 @@
 <script setup lang="ts">
 import { RouterLink, RouterView } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useChatStore } from '@/stores/chat'
 import { useSubjectsStore } from '@/stores/subjects'
 import { onMounted } from 'vue'
+import { setLocale, type Locale } from '@/i18n'
 
+const { t, locale } = useI18n()
 const chat = useChatStore()
 const subjects = useSubjectsStore()
+
+const locales: { value: Locale; label: string }[] = [
+  { value: 'en', label: 'EN' },
+  { value: 'es', label: 'ES' },
+]
+
+function switchLocale(value: Locale) {
+  setLocale(value)
+}
 
 onMounted(() => {
   subjects.fetch().catch(() => {
@@ -18,19 +30,30 @@ onMounted(() => {
   <div class="app-layout">
     <aside class="sidebar">
       <div class="sidebar-brand">
-        <h1>🎓 Exam Generator</h1>
+        <h1>🎓 {{ t('app.title') }}</h1>
       </div>
       <nav class="sidebar-nav">
-        <RouterLink to="/" class="nav-item">💬 Chat</RouterLink>
-        <RouterLink to="/subjects" class="nav-item">📚 Subjects</RouterLink>
-        <RouterLink to="/bank" class="nav-item">📝 Bank</RouterLink>
-        <RouterLink to="/exams" class="nav-item">📄 Exams</RouterLink>
-        <RouterLink to="/material" class="nav-item">📁 Material</RouterLink>
+        <RouterLink to="/" class="nav-item">💬 {{ t('app.nav.chat') }}</RouterLink>
+        <RouterLink to="/subjects" class="nav-item">📚 {{ t('app.nav.subjects') }}</RouterLink>
+        <RouterLink to="/bank" class="nav-item">📝 {{ t('app.nav.bank') }}</RouterLink>
+        <RouterLink to="/exams" class="nav-item">📄 {{ t('app.nav.exams') }}</RouterLink>
+        <RouterLink to="/material" class="nav-item">📁 {{ t('app.nav.material') }}</RouterLink>
       </nav>
       <div class="sidebar-footer">
         <span class="active-subject" v-if="chat.activeSubjectName">
-          Active subject: <strong>{{ chat.activeSubjectName }}</strong>
+          {{ t('app.activeSubject') }}: <strong>{{ chat.activeSubjectName }}</strong>
         </span>
+        <div class="locale-switch" role="group" aria-label="Language">
+          <button
+            v-for="l in locales"
+            :key="l.value"
+            type="button"
+            :class="{ active: locale === l.value }"
+            @click="switchLocale(l.value)"
+          >
+            {{ l.label }}
+          </button>
+        </div>
       </div>
     </aside>
     <main class="main-view">
@@ -82,6 +105,30 @@ onMounted(() => {
   margin-top: auto;
   font-size: 0.8rem;
   opacity: 0.85;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.locale-switch {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.locale-switch button {
+  flex: 1;
+  padding: 0.25rem 0;
+  border: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-sidebar-text);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.75rem;
+}
+
+.locale-switch button.active {
+  background: var(--color-sidebar-active);
+  font-weight: 600;
 }
 
 .main-view {

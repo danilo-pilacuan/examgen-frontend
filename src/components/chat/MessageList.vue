@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { ref, watch, nextTick } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type { ChatMessage } from '@/stores/chat'
 import MarkdownRenderer from '@/components/chat/MarkdownRenderer.vue'
 import QuestionCard from '@/components/widgets/QuestionCard.vue'
 import QuestionsTable from '@/components/widgets/QuestionsTable.vue'
 import ArtifactCard from '@/components/widgets/ArtifactCard.vue'
 
+const { t } = useI18n()
 const props = defineProps<{ messages: ChatMessage[] }>()
 
 const listRef = ref<HTMLElement | null>(null)
@@ -33,7 +35,7 @@ defineExpose({ scrollToBottom })
 <template>
   <div ref="listRef" class="message-list">
     <div v-if="messages.length === 0" class="empty-state">
-      <p>💬 Start a conversation with the agent.</p>
+      <p>💬 {{ t('chat.empty') }}</p>
     </div>
     <div v-for="msg in messages" :key="msg.id" class="message" :class="msg.role">
       <div class="bubble">

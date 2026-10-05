@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useChatStore } from '@/stores/chat'
 import { useChatStream } from '@/composables/useChatStream'
 import { useThreadId } from '@/composables/useThreadId'
@@ -8,6 +9,7 @@ import ToolActivity from '@/components/chat/ToolActivity.vue'
 import FileDrop from '@/components/chat/FileDrop.vue'
 import MaterialToast from '@/components/widgets/MaterialToast.vue'
 
+const { t } = useI18n()
 const chat = useChatStore()
 const { touchThread, createThread } = useThreadId()
 
@@ -24,7 +26,10 @@ const {
       const delta = event.payload.delta ?? ''
       if (assistantId.value) chat.appendToMessage(assistantId.value, delta)
     } else if (event.type === 'material_indexed') {
-      toastMessage.value = `📚 ${event.payload.filename}: ${event.payload.chunks} chunks indexed`
+      toastMessage.value = t('chat.toastChunks', {
+        filename: event.payload.filename,
+        n: event.payload.chunks,
+      })
       toastShow.value = true
       if (assistantId.value) chat.appendEventToMessage(assistantId.value, event)
     } else if (event.type !== 'done') {
@@ -86,13 +91,15 @@ function scrollToBottom() {
     <form class="chat-input" @submit.prevent="send">
       <textarea
         v-model="input"
-        placeholder="Type your message… (Enter to send)"
+        :placeholder="t('chat.placeholder')"
         rows="2"
         @keydown.enter.exact.prevent="send"
       />
       <div class="chat-actions">
-        <button v-if="streaming" type="button" class="stop" @click="stop">Stop</button>
-        <button type="submit" :disabled="!canSend">Send</button>
+        <button v-if="streaming" type="button" class="stop" @click="stop">
+          {{ t('chat.stop') }}
+        </button>
+        <button type="submit" :disabled="!canSend">{{ t('chat.send') }}</button>
       </div>
     </form>
     <FileDrop />

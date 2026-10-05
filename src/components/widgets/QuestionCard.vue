@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type { GeneratedItem } from '@/types/domain'
 import { apiFetch } from '@/api/http'
 
+const { t } = useI18n()
 const props = defineProps<{
   question: GeneratedItem
   subjectId?: string | null
@@ -31,8 +33,8 @@ async function save(verify: boolean) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         message: verify
-          ? `Save this question verified by human: ${props.question.statement}`
-          : `Save this question to the bank: ${props.question.statement}`,
+          ? t('questionCard.saveVerifiedPrompt', { statement: props.question.statement })
+          : t('questionCard.savePrompt', { statement: props.question.statement }),
         thread_id: props.threadId ?? undefined,
         subject_id: props.subjectId ?? undefined,
       }),
@@ -46,7 +48,7 @@ async function save(verify: boolean) {
     }
   } catch (e) {
     state.value = 'error'
-    errorMessage.value = e instanceof Error ? e.message : 'Error saving'
+    errorMessage.value = e instanceof Error ? e.message : t('questionCard.errorSaving')
   }
 }
 
@@ -60,11 +62,11 @@ function discard() {
   <div class="question-card" :class="state">
     <div class="card-header">
       <span class="icon">📝</span>
-      <span class="title">Question generated</span>
-      <span v-if="state === 'saved'" class="badge ok">Saved</span>
-      <span v-else-if="state === 'verified'" class="badge ok">✔ Verified</span>
-      <span v-else-if="state === 'discarded'" class="badge muted">Discarded</span>
-      <span v-else-if="state === 'saving'" class="badge info">Saving…</span>
+      <span class="title">{{ t('questionCard.title') }}</span>
+      <span v-if="state === 'saved'" class="badge ok">{{ t('questionCard.saved') }}</span>
+      <span v-else-if="state === 'verified'" class="badge ok">✔ {{ t('questionCard.verified') }}</span>
+      <span v-else-if="state === 'discarded'" class="badge muted">{{ t('questionCard.discarded') }}</span>
+      <span v-else-if="state === 'saving'" class="badge info">{{ t('questionCard.saving') }}</span>
     </div>
 
     <p class="statement">{{ question.statement }}</p>
@@ -82,10 +84,10 @@ function discard() {
     </ul>
 
     <p v-if="question.expected_answer" class="answer">
-      <strong>Answer:</strong> {{ question.expected_answer }}
+      <strong>{{ t('questionCard.answer') }}:</strong> {{ question.expected_answer }}
     </p>
     <p v-if="question.solution_explanation" class="explanation">
-      <strong>Explanation:</strong> {{ question.solution_explanation }}
+      <strong>{{ t('questionCard.explanation') }}:</strong> {{ question.solution_explanation }}
     </p>
 
     <div class="meta">
@@ -98,13 +100,13 @@ function discard() {
 
     <div v-if="canAct" class="actions">
       <button type="button" class="primary" :disabled="state === 'saving'" @click="save(true)">
-        ✔ Save & verify
+        ✔ {{ t('questionCard.saveVerify') }}
       </button>
       <button type="button" :disabled="state === 'saving'" @click="save(false)">
-        Save
+        {{ t('questionCard.save') }}
       </button>
       <button type="button" class="danger" :disabled="state === 'saving'" @click="discard">
-        Discard
+        {{ t('questionCard.discard') }}
       </button>
     </div>
     <p v-if="errorMessage" class="error">{{ errorMessage }}</p>

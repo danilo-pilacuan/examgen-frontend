@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { onMounted, ref, watch, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useBankStore } from '@/stores/bank'
 import { useSubjectsStore } from '@/stores/subjects'
 import type { Question } from '@/types/domain'
 
+const { t } = useI18n()
 const bank = useBankStore()
 const subjects = useSubjectsStore()
 
@@ -57,46 +59,46 @@ async function toggleVerification(q: Question) {
 
 <template>
   <div class="bank-view">
-    <h2>📝 Question bank</h2>
+    <h2>📝 {{ t('bank.title') }}</h2>
 
     <div v-if="!subjects.activeSubjectId" class="empty">
-      Activate a subject first (Subjects view).
+      {{ t('bank.needSubject') }}
     </div>
     <template v-else>
       <div class="filters">
-        <input v-model="filterTopic" type="search" placeholder="Filter by topic…" />
+        <input v-model="filterTopic" type="search" :placeholder="t('bank.filterTopic')" />
         <select v-model="filterBloom">
-          <option value="">Bloom: all</option>
+          <option value="">{{ t('bank.bloomAll') }}</option>
           <option v-for="b in BLOOM_LEVELS" :key="b" :value="b">{{ b }}</option>
         </select>
         <select v-model="filterDifficulty">
-          <option value="">Difficulty: all</option>
+          <option value="">{{ t('bank.difficultyAll') }}</option>
           <option v-for="d in DIFFICULTIES" :key="d" :value="d">{{ d }}</option>
         </select>
         <select v-model="filterType">
-          <option value="">Type: all</option>
-          <option v-for="t in TYPES" :key="t" :value="t">{{ t }}</option>
+          <option value="">{{ t('bank.typeAll') }}</option>
+          <option v-for="t2 in TYPES" :key="t2" :value="t2">{{ t2 }}</option>
         </select>
         <select v-model="filterVerified">
-          <option value="all">Verification: all</option>
-          <option value="human">Verified (human)</option>
-          <option value="ai">Verified (AI)</option>
-          <option value="none">Unverified</option>
+          <option value="all">{{ t('bank.verificationAll') }}</option>
+          <option value="human">{{ t('bank.verifiedHuman') }}</option>
+          <option value="ai">{{ t('bank.verifiedAi') }}</option>
+          <option value="none">{{ t('bank.unverified') }}</option>
         </select>
       </div>
 
-      <div v-if="bank.loading" class="loading">Loading…</div>
+      <div v-if="bank.loading" class="loading">{{ t('bank.loading') }}</div>
       <div v-else-if="filtered.length === 0" class="empty">
-        No questions for this subject. Generate some from the Chat.
+        {{ t('bank.empty') }}
       </div>
       <table v-else class="question-table">
         <thead>
           <tr>
-            <th>Topic</th>
-            <th>Type</th>
-            <th>Bloom</th>
-            <th>Difficulty</th>
-            <th>Verification</th>
+            <th>{{ t('questionsTable.topic') }}</th>
+            <th>{{ t('questionsTable.type') }}</th>
+            <th>{{ t('questionsTable.bloom') }}</th>
+            <th>{{ t('questionsTable.difficulty') }}</th>
+            <th>{{ t('bank.verification') }}</th>
             <th></th>
           </tr>
         </thead>
@@ -113,12 +115,12 @@ async function toggleVerification(q: Question) {
             <td>{{ q.difficulty }}</td>
             <td>
               <span :class="q.verified_by_human ? 'ok' : 'warn'">
-                {{ q.verified_by_human ? '✔ Human' : '⏳ Pending' }}
+                {{ q.verified_by_human ? `✔ ${t('questionsTable.human')}` : `⏳ ${t('questionsTable.pending')}` }}
               </span>
             </td>
             <td>
               <button type="button" @click.stop="toggleVerification(q)">
-                {{ q.verified_by_human ? 'Remove' : 'Verify' }}
+                {{ q.verified_by_human ? t('bank.remove') : t('bank.verify') }}
               </button>
             </td>
           </tr>
@@ -127,23 +129,23 @@ async function toggleVerification(q: Question) {
 
       <div v-if="selected" class="detail">
         <div class="detail-header">
-          <h3>Detail</h3>
+          <h3>{{ t('bank.detail') }}</h3>
           <button type="button" class="close" @click="selected = null">✕</button>
         </div>
-        <p><strong>Statement:</strong> {{ selected.question_text }}</p>
+        <p><strong>{{ t('bank.statement') }}:</strong> {{ selected.question_text }}</p>
         <ul v-if="selected.options">
           <li v-for="(opt, i) in selected.options" :key="i" :class="{ correct: opt.is_correct }">
             {{ opt.text }} <span v-if="opt.is_correct">✔</span>
           </li>
         </ul>
         <p v-if="selected.expected_answer">
-          <strong>Expected answer:</strong> {{ selected.expected_answer }}
+          <strong>{{ t('bank.expectedAnswer') }}:</strong> {{ selected.expected_answer }}
         </p>
         <p v-if="selected.solution_explanation">
-          <strong>Explanation:</strong> {{ selected.solution_explanation }}
+          <strong>{{ t('bank.explanation') }}:</strong> {{ selected.solution_explanation }}
         </p>
         <p v-if="selected.ai_review_notes">
-          <strong>AI notes:</strong> {{ selected.ai_review_notes }}
+          <strong>{{ t('bank.aiNotes') }}:</strong> {{ selected.ai_review_notes }}
           <span v-if="selected.ai_review_priority" class="priority">
             ({{ selected.ai_review_priority }})
           </span>

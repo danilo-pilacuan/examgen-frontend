@@ -23,7 +23,7 @@ watch(
   () => scrollToBottom(),
 )
 
-// Auto-scroll mientras llega el streaming de tokens.
+// Auto-scroll while the token streaming arrives.
 watch(
   () => props.messages.map((m) => m.content.length).join(','),
   () => scrollToBottom(),

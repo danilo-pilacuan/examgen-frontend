@@ -14,7 +14,7 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      // Proxy a exam-app en desarrollo: evita CORS en dev.
+      // Proxy to exam-app in development: avoids CORS in dev.
       '/api': {
         target: 'http://localhost:8000',
         changeOrigin: true,
@@ -23,7 +23,7 @@ export default defineConfig({
         target: 'http://localhost:8000',
         changeOrigin: true,
       },
-      // El WS se proxifica con ws: true (upgrade).
+      // The WS is proxied with ws: true (upgrade).
       '/ws': {
         target: 'ws://localhost:8000',
         ws: true,

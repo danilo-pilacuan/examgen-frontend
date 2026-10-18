@@ -1,4 +1,4 @@
-/** Store del banco de preguntas. */
+/** Question bank store. */
 import { defineStore } from 'pinia'
 import { apiFetch } from '@/api/http'
 import type { Question } from '@/types/domain'

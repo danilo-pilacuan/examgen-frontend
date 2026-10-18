@@ -1,4 +1,4 @@
-/** Store de materias registradas. */
+/** Registered subjects store. */
 import { defineStore } from 'pinia'
 import { apiFetch } from '@/api/http'
 import type { Subject } from '@/types/domain'

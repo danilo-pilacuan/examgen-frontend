@@ -1,4 +1,4 @@
-/** Store de material indexado. */
+/** Indexed material store. */
 import { defineStore } from 'pinia'
 import { apiFetch } from '@/api/http'
 

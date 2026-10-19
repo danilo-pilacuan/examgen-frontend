@@ -44,22 +44,20 @@ function download(url: string) {
   window.open(url, '_blank')
 }
 
-/** Human label for a PDF: version + with/without answers when the name
- * follows the stage-9 convention, otherwise a plain PDF vN. */
-function pdfLabel(pdf: string, i: number): string {
+/** Human label for a PDF: "<Name>_A_respondido.pdf" -> "A · with answers",
+ * "<Name>_A.pdf" -> "A" (student copy). Falls back to the file name. */
+function pdfLabel(pdf: string): string {
   const name = pdf.split(/[\\/]/).pop() ?? pdf
-  const version = name.match(/_v(\d+)_/)
-  const withAnswers = name.includes('_with_answers')
-  const withoutAnswers = name.includes('_no_answers')
-  if (version && (withAnswers || withoutAnswers)) {
-    const kind = withAnswers
-      ? t('exams.withAnswers')
-      : withoutAnswers
-        ? t('exams.noAnswers')
-        : 'PDF'
-    return `v${version[1]} · ${kind}`
+  const stem = name.replace(/\.pdf$/i, '')
+  const answered = stem.endsWith('_respondido')
+  const base = answered ? stem.slice(0, -'_respondido'.length) : stem
+  const version = base.match(/_([A-J])$/)
+  if (version) {
+    return answered
+      ? `${version[1]} · ${t('exams.withAnswers')}`
+      : `${version[1]} · ${t('exams.noAnswers')}`
   }
-  return `PDF v${i + 1}`
+  return name
 }
 
 async function generate() {
@@ -82,6 +80,7 @@ async function generate() {
           estimated_duration_minutes: duration.value,
           metadata: {
             title: title.value || t('exams.defaultTitle'),
+            name: title.value || t('exams.defaultTitle'),
             num_versions: numVersions.value,
           },
         },
@@ -166,7 +165,7 @@ async function generate() {
       <ul v-else class="exam-list">
         <li v-for="exam in exams.exams" :key="exam.id">
           <div class="exam-info">
-            <strong>{{ exam.blueprint.metadata?.title ?? t('exams.defaultTitle') }}</strong>
+            <strong>{{ exam.name || exam.blueprint.metadata?.title || t('exams.defaultTitle') }}</strong>
             <span class="meta">
               {{ exam.items.length }} {{ t('exams.questions') }} ·
               {{ new Date(exam.created_at).toLocaleString() }}
@@ -182,12 +181,12 @@ async function generate() {
               📦 {{ t('exams.zip') }}
             </button>
             <button
-              v-for="(pdf, i) in exam.pdf_paths"
+              v-for="pdf in exam.pdf_paths"
               :key="pdf"
               type="button"
               @click="download(`/output/${pdf.split(/[\\/]/).pop()}`)"
             >
-              ⬇️ {{ pdfLabel(pdf, i) }}
+              ⬇️ {{ pdfLabel(pdf) }}
             </button>
           </div>
         </li>

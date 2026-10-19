@@ -80,8 +80,10 @@ export interface Exam {
   id: string
   subject_id: string
   subject_name: string
+  name?: string
   blueprint: ExamBlueprint
   items: GeneratedItem[]
+  num_versions?: number
   pdf_paths: string[]
   zip_path?: string | null
   created_at: string

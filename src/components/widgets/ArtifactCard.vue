@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
 const props = defineProps<{
-  kind: 'pdf' | 'csv' | 'xlsx'
+  kind: 'pdf' | 'csv' | 'xlsx' | 'json'
   url: string
   filename: string
   version?: number
@@ -13,12 +13,14 @@ const props = defineProps<{
 const icon = computed(() => {
   if (props.kind === 'pdf') return '📄'
   if (props.kind === 'xlsx') return '📊'
+  if (props.kind === 'json') return '🧾'
   return '📈'
 })
 
 const label = computed(() => {
   if (props.kind === 'pdf') return 'PDF'
   if (props.kind === 'xlsx') return 'Excel'
+  if (props.kind === 'json') return 'JSON'
   return 'CSV'
 })
 </script>

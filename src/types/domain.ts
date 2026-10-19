@@ -83,5 +83,6 @@ export interface Exam {
   blueprint: ExamBlueprint
   items: GeneratedItem[]
   pdf_paths: string[]
+  zip_path?: string | null
   created_at: string
 }

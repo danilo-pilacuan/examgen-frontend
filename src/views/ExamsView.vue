@@ -44,6 +44,24 @@ function download(url: string) {
   window.open(url, '_blank')
 }
 
+/** Human label for a PDF: version + with/without answers when the name
+ * follows the stage-9 convention, otherwise a plain PDF vN. */
+function pdfLabel(pdf: string, i: number): string {
+  const name = pdf.split(/[\\/]/).pop() ?? pdf
+  const version = name.match(/_v(\d+)_/)
+  const withAnswers = name.includes('_with_answers')
+  const withoutAnswers = name.includes('_no_answers')
+  if (version && (withAnswers || withoutAnswers)) {
+    const kind = withAnswers
+      ? t('exams.withAnswers')
+      : withoutAnswers
+        ? t('exams.noAnswers')
+        : 'PDF'
+    return `v${version[1]} · ${kind}`
+  }
+  return `PDF v${i + 1}`
+}
+
 async function generate() {
   if (!subjects.activeSubjectId || generating.value) return
   generating.value = true
@@ -156,12 +174,20 @@ async function generate() {
           </div>
           <div class="pdf-links">
             <button
+              v-if="exam.zip_path"
+              type="button"
+              class="zip"
+              @click="download(`/output/${exam.zip_path.split(/[\\/]/).pop()}`)"
+            >
+              📦 {{ t('exams.zip') }}
+            </button>
+            <button
               v-for="(pdf, i) in exam.pdf_paths"
               :key="pdf"
               type="button"
               @click="download(`/output/${pdf.split(/[\\/]/).pop()}`)"
             >
-              ⬇️ PDF v{{ i + 1 }}
+              ⬇️ {{ pdfLabel(pdf, i) }}
             </button>
           </div>
         </li>
@@ -280,6 +306,12 @@ async function generate() {
   padding: 0.3rem 0.7rem;
   cursor: pointer;
   font-size: 0.85rem;
+}
+
+.pdf-links button.zip {
+  background: var(--color-primary);
+  color: #fff;
+  font-weight: 600;
 }
 
 .empty,

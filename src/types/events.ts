@@ -64,7 +64,7 @@ export interface QuestionsListedEvent extends SSEEvent {
 /** Downloadable artifact card. */
 export interface ArtifactReadyEvent extends SSEEvent {
   type: 'artifact_ready'
-  payload: { kind: 'pdf' | 'csv' | 'xlsx' | 'json'; url: string; filename: string; version?: number }
+  payload: { kind: 'pdf' | 'csv' | 'xlsx' | 'json' | 'zip'; url: string; filename: string; version?: number }
 }
 
 /** Indexed material toast. */

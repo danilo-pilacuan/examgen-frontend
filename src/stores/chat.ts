@@ -71,9 +71,8 @@ export const useChatStore = defineStore('chat', {
     lastUpload: null,
   }),
   getters: {
-    activeSubjectName(state): string | null {
-      return state.activeSubjectName
-    },
+    /** True when a subject is selected (used to style the chat context bar). */
+    hasActiveSubject: (state) => state.activeSubjectId !== null,
   },
   actions: {
     pushUserMessage(content: string) {

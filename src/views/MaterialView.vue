@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, watch, computed } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useMaterialStore } from '@/stores/material'
 import { useSubjectsStore } from '@/stores/subjects'
@@ -21,10 +21,7 @@ const sources = computed(() => {
   return Array.from(map.entries()).map(([file, count]) => ({ file, count }))
 })
 
-onMounted(() => {
-  subjects.fetch().catch(() => {})
-})
-
+// Reactive: the material list follows the subject selected in the header.
 watch(
   () => subjects.activeSubjectId,
   (id) => {

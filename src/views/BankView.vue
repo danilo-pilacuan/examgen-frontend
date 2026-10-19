@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, watch, computed } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useBankStore } from '@/stores/bank'
 import { useSubjectsStore } from '@/stores/subjects'
@@ -20,10 +20,7 @@ const BLOOM_LEVELS = ['remember', 'understand', 'apply', 'analyze', 'evaluate', 
 const DIFFICULTIES = ['easy', 'medium', 'hard']
 const TYPES = ['multiple_choice', 'true_false', 'short_answer', 'essay', 'fill_in_blank']
 
-onMounted(() => {
-  subjects.fetch().catch(() => {})
-})
-
+// Reactive: the bank follows the subject selected in the header.
 watch(
   () => subjects.activeSubjectId,
   (id) => {

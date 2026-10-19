@@ -4,7 +4,7 @@
  * and parse the `event:`/`data:` frames manually.
  */
 import type { ChatEvent } from '@/types/events'
-import { API_URL } from '@/api/env'
+import { API_URL, getAuthToken } from '@/api/env'
 
 export interface ChatStreamOptions {
   message: string
@@ -50,6 +50,9 @@ export async function* chatStream(options: ChatStreamOptions): AsyncGenerator<Ch
       thread_id: threadId,
       subject_id: subjectId ?? null,
       subject_name: subjectName ?? null,
+      // SSE POST: the JWT travels in the body (browser fetch cannot always
+      // attach an Authorization header to EventSource-style streams).
+      token: getAuthToken(),
     }),
     signal,
   })

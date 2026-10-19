@@ -15,6 +15,17 @@ export class ApiError extends Error {
   }
 }
 
+/** JWT of the current session (injected by the auth store). */
+let authToken: string | null = null
+
+export function setAuthToken(token: string | null) {
+  authToken = token
+}
+
+export function getAuthToken(): string | null {
+  return authToken
+}
+
 async function parseError(response: Response): Promise<never> {
   let detail = response.statusText
   try {
@@ -27,11 +38,15 @@ async function parseError(response: Response): Promise<never> {
 }
 
 export async function apiFetch<T = unknown>(path: string, options: RequestInit = {}): Promise<T> {
+  const headers: Record<string, string> = {
+    ...((options.headers as Record<string, string>) ?? {}),
+  }
+  if (authToken && !headers['Authorization']) {
+    headers['Authorization'] = `Bearer ${authToken}`
+  }
   const response = await fetch(`${API_URL}${path}`, {
     ...options,
-    headers: {
-      ...(options.headers ?? {}),
-    },
+    headers,
   })
   if (!response.ok) {
     throw await parseError(response)

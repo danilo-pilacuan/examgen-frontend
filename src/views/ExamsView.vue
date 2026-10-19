@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue'
+import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useExamsStore } from '@/stores/exams'
 import { useSubjectsStore } from '@/stores/subjects'
@@ -30,10 +30,7 @@ const DIFFICULTY_PRESETS = [
 ]
 const difficultyPreset = ref(0)
 
-onMounted(() => {
-  subjects.fetch().catch(() => {})
-})
-
+// Reactive: the exam list follows the subject selected in the header.
 watch(
   () => subjects.activeSubjectId,
   (id) => {

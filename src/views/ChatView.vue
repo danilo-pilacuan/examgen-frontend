@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import ThreadSidebar from '@/components/chat/ThreadSidebar.vue'
 import ChatPanel from '@/components/chat/ChatPanel.vue'
-import FileUpload from '@/components/chat/FileUpload.vue'
 </script>
 
 <template>
@@ -9,7 +8,6 @@ import FileUpload from '@/components/chat/FileUpload.vue'
     <ThreadSidebar />
     <section class="chat-main">
       <ChatPanel />
-      <FileUpload />
     </section>
   </div>
 </template>

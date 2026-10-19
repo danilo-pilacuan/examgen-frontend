@@ -2,6 +2,10 @@
 import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useChatStore } from '@/stores/chat'
+import { useSubjectsStore } from '@/stores/subjects'
+import { useMaterialStore } from '@/stores/material'
+import { useBankStore } from '@/stores/bank'
+import { useExamsStore } from '@/stores/exams'
 import { useChatStream } from '@/composables/useChatStream'
 import { useThreadId } from '@/composables/useThreadId'
 import MessageList from '@/components/chat/MessageList.vue'
@@ -11,10 +15,28 @@ import MaterialToast from '@/components/widgets/MaterialToast.vue'
 
 const { t } = useI18n()
 const chat = useChatStore()
+const subjects = useSubjectsStore()
+const material = useMaterialStore()
+const bank = useBankStore()
+const exams = useExamsStore()
 const { touchThread, createThread } = useThreadId()
 
 const toastShow = ref(false)
 const toastMessage = ref('')
+
+/** Applies a subject chosen in the chat to the whole app (reactive selector). */
+function applyChatSubject(subjectId: string, subjectName: string) {
+  // Register it locally if the agent created a subject the list doesn't have yet.
+  if (!subjects.subjects.some((s) => s.id === subjectId)) {
+    subjects.subjects.push({ id: subjectId, name: subjectName })
+  }
+  subjects.setActive(subjectId)
+  chat.setActiveSubject(subjectId, subjectName)
+  // Refresh the reactive panels that depend on the subject.
+  bank.fetch(subjectId).catch(() => {})
+  material.fetch(subjectId).catch(() => {})
+  exams.fetch(subjectId).catch(() => {})
+}
 
 const {
   streaming,
@@ -32,6 +54,11 @@ const {
       })
       toastShow.value = true
       if (assistantId.value) chat.appendEventToMessage(assistantId.value, event)
+    } else if (event.type === 'subject_selected' || event.type === 'subject_registered') {
+      // The agent picked/created a subject in the chat → sync the header
+      // selector and every reactive panel.
+      applyChatSubject(event.payload.subject_id, event.payload.subject_name)
+      if (assistantId.value) chat.appendEventToMessage(assistantId.value, event)
     } else if (event.type !== 'done') {
       if (assistantId.value) chat.appendEventToMessage(assistantId.value, event)
     }
@@ -47,6 +74,13 @@ const assistantId = ref<string | null>(null)
 const listRef = ref<InstanceType<typeof MessageList> | null>(null)
 
 const canSend = computed(() => input.value.trim().length > 0 && !streaming.value)
+
+// Reactive chat context: mirrors the subject selected in the header.
+const contextLabel = computed(() =>
+  chat.activeSubjectName
+    ? t('chat.contextWith', { subject: chat.activeSubjectName })
+    : t('chat.contextNone'),
+)
 
 async function send() {
   const message = input.value.trim()
@@ -86,6 +120,10 @@ function scrollToBottom() {
 
 <template>
   <div class="chat-panel">
+    <div class="chat-context" :class="{ active: chat.activeSubjectId }">
+      <span class="dot" />
+      <span>{{ contextLabel }}</span>
+    </div>
     <MessageList ref="listRef" :messages="chat.messages" />
     <ToolActivity :streaming="chat.streaming" />
     <form class="chat-input" @submit.prevent="send">
@@ -112,6 +150,32 @@ function scrollToBottom() {
   display: flex;
   flex-direction: column;
   height: 100%;
+}
+
+.chat-context {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 1rem;
+  font-size: 0.8rem;
+  color: var(--color-muted);
+  border-bottom: 1px dashed var(--color-border);
+  background: var(--color-surface);
+}
+
+.chat-context.active {
+  color: var(--color-primary);
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-muted);
+}
+
+.chat-context.active .dot {
+  background: var(--color-success);
 }
 
 .chat-input {
@@ -156,3 +220,4 @@ function scrollToBottom() {
   cursor: not-allowed;
 }
 </style>
+

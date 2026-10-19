@@ -40,3 +40,6 @@ function resolveWsUrl(): string {
 
 export const API_URL = resolveApiUrl()
 export const WS_URL = resolveWsUrl()
+
+// Re-export so SSE/WS clients can pull the token from a single module.
+export { getAuthToken } from '@/api/http'

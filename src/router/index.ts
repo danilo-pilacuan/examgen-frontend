@@ -1,9 +1,16 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import ChatView from '@/views/ChatView.vue'
+import { useAuthStore } from '@/stores/auth'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
+    {
+      path: '/login',
+      name: 'auth',
+      component: () => import('@/views/AuthView.vue'),
+      meta: { public: true },
+    },
     {
       path: '/',
       name: 'chat',
@@ -30,6 +37,19 @@ const router = createRouter({
       component: () => import('@/views/MaterialView.vue'),
     },
   ],
+})
+
+// Auth guard: every route except /login requires an authenticated professor.
+router.beforeEach((to) => {
+  const auth = useAuthStore()
+  if (to.meta.public) {
+    if (auth.isAuthenticated && to.name === 'auth') return { name: 'chat' }
+    return true
+  }
+  if (!auth.isAuthenticated) {
+    return { name: 'auth', query: { redirect: to.fullPath } }
+  }
+  return true
 })
 
 export default router

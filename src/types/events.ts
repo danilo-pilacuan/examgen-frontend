@@ -19,6 +19,7 @@ export type EventType =
   | 'material_indexed'
   | 'question_saved'
   | 'subject_registered'
+  | 'subject_selected'
   | 'cancelled'
   | 'done'
   | 'error'
@@ -84,6 +85,12 @@ export interface SubjectRegisteredEvent extends SSEEvent {
   payload: { subject_id: string; subject_name: string }
 }
 
+/** Subject selected by the agent in the chat (reactive header selector). */
+export interface SubjectSelectedEvent extends SSEEvent {
+  type: 'subject_selected'
+  payload: { subject_id: string; subject_name: string }
+}
+
 /** Cancellation via WS. */
 export interface CancelledEvent extends SSEEvent {
   type: 'cancelled'
@@ -112,6 +119,7 @@ export type ChatEvent =
   | MaterialIndexedEvent
   | QuestionSavedEvent
   | SubjectRegisteredEvent
+  | SubjectSelectedEvent
   | CancelledEvent
   | DoneEvent
   | ErrorEvent

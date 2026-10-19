@@ -20,6 +20,7 @@ onMounted(() => {
   subjects.fetch().catch(() => {})
 })
 
+/** Activates a subject and syncs the header selector + chat context. */
 function activate(id: string | null, name: string | null) {
   subjects.setActive(id)
   chat.setActiveSubject(id, name)
@@ -37,8 +38,7 @@ async function create() {
     })
     await subjects.fetch()
     newName.value = ''
-    showForm.value = false
-  } catch {
+    showForm.value = false  } catch {
     // no connection: keep the form open
   } finally {
     creating.value = false

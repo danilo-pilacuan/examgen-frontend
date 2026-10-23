@@ -2,6 +2,8 @@
 import { ref, watch, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { ChatMessage } from '@/stores/chat'
+import { useChatStore } from '@/stores/chat'
+import { useThreadId } from '@/composables/useThreadId'
 import MarkdownRenderer from '@/components/chat/MarkdownRenderer.vue'
 import QuestionCard from '@/components/widgets/QuestionCard.vue'
 import QuestionsTable from '@/components/widgets/QuestionsTable.vue'
@@ -9,6 +11,9 @@ import ArtifactCard from '@/components/widgets/ArtifactCard.vue'
 
 const { t } = useI18n()
 const props = defineProps<{ messages: ChatMessage[] }>()
+
+const chat = useChatStore()
+const { currentThreadId } = useThreadId()
 
 const emit = defineEmits<{
   (e: 'retry'): void
@@ -48,6 +53,8 @@ defineExpose({ scrollToBottom })
           <QuestionCard
             v-if="event.type === 'question_generated'"
             :question="event.payload.question"
+            :subject-id="chat.activeSubjectId"
+            :thread-id="currentThreadId"
           />
           <QuestionsTable
             v-else-if="event.type === 'questions_listed'"

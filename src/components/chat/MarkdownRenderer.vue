@@ -42,6 +42,8 @@ const html = computed(() => md.render(props.source ?? ''))
 }
 
 .markdown :deep(table) {
+  display: block;
+  overflow-x: auto;
   border-collapse: collapse;
   margin: 0.5rem 0;
 }

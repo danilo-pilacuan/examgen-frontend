@@ -34,11 +34,26 @@ async function parseError(response: Response): Promise<never> {
   } catch {
     // response without JSON
   }
-  throw new ApiError(response.status, detail)
+  throw new ApiError(response.status, friendlyHttpMessage(response.status, detail))
+}
+
+/** Maps raw HTTP statuses to actionable messages (BUG-12/ISS-07). */
+export function friendlyHttpMessage(status: number, detail: string): string {
+  if (status === 413) {
+    return 'El archivo supera el tamaño máximo (100 MB). Divide el material en capítulos o archivos más pequeños.'
+  }
+  if (status === 401) {
+    return 'Tu sesión expiró. Vuelve a iniciar sesión.'
+  }
+  if (status === 403) {
+    return 'No tienes permisos sobre este recurso.'
+  }
+  return detail
 }
 
 export async function apiFetch<T = unknown>(path: string, options: RequestInit = {}): Promise<T> {
   const headers: Record<string, string> = {
+    Accept: 'application/json',
     ...((options.headers as Record<string, string>) ?? {}),
   }
   if (authToken && !headers['Authorization']) {

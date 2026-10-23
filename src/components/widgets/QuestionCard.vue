@@ -2,7 +2,7 @@
 import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { GeneratedItem } from '@/types/domain'
-import { apiFetch } from '@/api/http'
+import { apiFetch, getAuthToken } from '@/api/http'
 
 const { t } = useI18n()
 const props = defineProps<{
@@ -37,6 +37,9 @@ async function save(verify: boolean) {
           : t('questionCard.savePrompt', { statement: props.question.statement }),
         thread_id: props.threadId ?? undefined,
         subject_id: props.subjectId ?? undefined,
+        // The chat endpoint resolves the user from the body token (SSE
+        // clients cannot always send headers).
+        token: getAuthToken() ?? undefined,
       }),
     })
     if (verify) {

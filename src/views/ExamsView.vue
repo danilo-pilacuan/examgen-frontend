@@ -11,6 +11,7 @@ const subjects = useSubjectsStore()
 
 const showForm = ref(false)
 const generating = ref(false)
+const generateError = ref('')
 const totalQuestions = ref(10)
 const numVersions = ref(1)
 const duration = ref(90)
@@ -47,6 +48,7 @@ function download(url: string) {
 async function generate() {
   if (!subjects.activeSubjectId || generating.value) return
   generating.value = true
+  generateError.value = ''
   try {
     const bloom = BLOOM_PRESETS[bloomPreset.value].dist
     const diff = DIFFICULTY_PRESETS[difficultyPreset.value].dist
@@ -74,8 +76,10 @@ async function generate() {
     })
     await exams.fetch(subjects.activeSubjectId)
     showForm.value = false
-  } catch {
-    // no connection: keep the form open
+  } catch (e) {
+    // Show the actionable detail (apiFetch maps 413/401/403); keep the
+    // form open so the professor can retry (ISS-07).
+    generateError.value = e instanceof Error ? e.message : t('exams.generateError')
   } finally {
     generating.value = false
   }
@@ -137,6 +141,7 @@ async function generate() {
             </select>
           </div>
         </div>
+        <p v-if="generateError" class="form-error">⚠️ {{ generateError }}</p>
         <button type="submit" class="submit" :disabled="generating">
           {{ generating ? t('exams.generating') : t('exams.generateBtn') }}
         </button>
@@ -250,6 +255,12 @@ async function generate() {
 .submit:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.form-error {
+  margin: 0;
+  color: var(--color-danger);
+  font-size: 0.85rem;
 }
 
 .exam-list {

@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { useMaterialStore } from '@/stores/material'
 import { useSubjectsStore } from '@/stores/subjects'
 import { apiFetch } from '@/api/http'
+// apiFetch already maps 413/401/403 to actionable messages (BUG-12).
 
 const { t } = useI18n()
 const material = useMaterialStore()

@@ -145,6 +145,7 @@ export default {
     difficulty: 'Difficulty',
     generating: 'Generating… (may take a while)',
     generateBtn: 'Generate exam',
+    generateError: 'Error generating the exam',
     loading: 'Loading…',
     empty: 'No exams generated yet. Ask the agent: "Generate a 10-question exam".',
     questions: 'questions',

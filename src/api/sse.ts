@@ -24,6 +24,8 @@ function parseSSEBuffer(buffer: string): { frames: RawSSEFrame[]; rest: string }
   const parts = buffer.split('\n\n')
   const rest = parts.pop() ?? ''
   for (const part of parts) {
+    // Heartbeat comment frames (": ping") have no data lines and are
+    // dropped here: they only keep the connection warm.
     let event = 'message'
     const dataLines: string[] = []
     for (const line of part.split('\n')) {

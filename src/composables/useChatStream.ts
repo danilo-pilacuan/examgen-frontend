@@ -14,6 +14,13 @@ export interface UseChatStreamOptions {
 export function useChatStream(options: UseChatStreamOptions) {
   const streaming = ref(false)
   const abortController = ref<AbortController | null>(null)
+  /** Last sent payload, so a dropped stream can be retried verbatim. */
+  let lastSend: {
+    message: string
+    threadId: string
+    subjectId?: string | null
+    subjectName?: string | null
+  } | null = null
 
   async function send(sendOptions: {
     message: string
@@ -21,6 +28,7 @@ export function useChatStream(options: UseChatStreamOptions) {
     subjectId?: string | null
     subjectName?: string | null
   }) {
+    lastSend = sendOptions
     streaming.value = true
     abortController.value = new AbortController()
     try {
@@ -38,11 +46,18 @@ export function useChatStream(options: UseChatStreamOptions) {
     }
   }
 
+  /** Re-sends the last message (used when the stream dies mid-turn). */
+  function retry(): boolean {
+    if (!lastSend || streaming.value) return false
+    void send(lastSend)
+    return true
+  }
+
   function stop() {
     abortController.value?.abort()
     abortController.value = null
     streaming.value = false
   }
 
-  return { streaming, send, stop }
+  return { streaming, send, stop, retry }
 }

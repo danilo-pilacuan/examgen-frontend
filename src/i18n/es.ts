@@ -42,6 +42,8 @@ export default {
     chunksIndexed: '{n} fragmentos indexados',
     orDragFile: 'o arrastra un archivo aquí',
     toastChunks: '📚 {filename}: {n} fragmentos indexados',
+    connectionLost: 'Conexión perdida — la acción pudo completarse. Revisa Banco/Exámenes.',
+    retry: 'Reintentar',
     events: {
       tool_start: 'Ejecutando herramienta…',
       tool_end: 'Herramienta completada',
@@ -135,6 +137,7 @@ export default {
     numQuestions: 'Nº de preguntas',
     versions: 'Versiones (anti-copia)',
     zip: 'Descargar ZIP (todas las versiones)',
+    pdf: 'Descargar PDF',
     withAnswers: 'copia respondida',
     noAnswers: 'copia del estudiante',
     duration: 'Duración (min)',

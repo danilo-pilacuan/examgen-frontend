@@ -10,6 +10,10 @@ import ArtifactCard from '@/components/widgets/ArtifactCard.vue'
 const { t } = useI18n()
 const props = defineProps<{ messages: ChatMessage[] }>()
 
+const emit = defineEmits<{
+  (e: 'retry'): void
+}>()
+
 const listRef = ref<HTMLElement | null>(null)
 
 function scrollToBottom() {
@@ -61,6 +65,12 @@ defineExpose({ scrollToBottom })
 
         <MarkdownRenderer :source="msg.content" />
         <span v-if="msg.streaming" class="cursor">▍</span>
+        <div v-if="msg.failed" class="stream-lost">
+          <span>⚠️ {{ t('chat.connectionLost') }}</span>
+          <button type="button" class="retry" @click="emit('retry')">
+            ↻ {{ t('chat.retry') }}
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -104,6 +114,33 @@ defineExpose({ scrollToBottom })
 
 .cursor {
   animation: blink 1s step-end infinite;
+}
+
+.stream-lost {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.5rem;
+  padding: 0.45rem 0.7rem;
+  border: 1px solid var(--color-danger);
+  border-radius: 8px;
+  color: var(--color-danger);
+  font-size: 0.85rem;
+}
+
+.stream-lost .retry {
+  border: 1px solid var(--color-danger);
+  background: transparent;
+  color: var(--color-danger);
+  border-radius: 6px;
+  padding: 0.25rem 0.6rem;
+  cursor: pointer;
+  font-size: 0.82rem;
+  white-space: nowrap;
+}
+
+.stream-lost .retry:hover {
+  background: rgba(220, 38, 38, 0.08);
 }
 
 @keyframes blink {

@@ -42,6 +42,8 @@ export default {
     chunksIndexed: '{n} chunks indexed',
     orDragFile: 'or drag a file here',
     toastChunks: '📚 {filename}: {n} chunks indexed',
+    connectionLost: 'Connection lost — the action may have completed. Check the Bank/Exams view.',
+    retry: 'Retry',
     events: {
       tool_start: 'Running tool…',
       tool_end: 'Tool finished',
@@ -135,6 +137,7 @@ export default {
     numQuestions: 'Nº of questions',
     versions: 'Versions (anti-copy)',
     zip: 'Download ZIP (all versions)',
+    pdf: 'Download PDF',
     withAnswers: 'answered copy',
     noAnswers: 'student copy',
     duration: 'Duration (min)',

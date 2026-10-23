@@ -11,6 +11,8 @@ export interface ChatMessage {
   content: string
   events: ChatEvent[]
   streaming?: boolean
+  /** The transport died mid-turn (the action may have completed server-side). */
+  failed?: boolean
 }
 
 export interface UploadResult {
@@ -100,6 +102,18 @@ export const useChatStore = defineStore('chat', {
       const msg = this.messages.find((m) => m.id === id)
       if (msg) msg.streaming = false
     },
+    /** Marks the assistant bubble as lost (stream died without done/error). */
+    failMessage(id: string) {
+      const msg = this.messages.find((m) => m.id === id)
+      if (msg) {
+        msg.streaming = false
+        msg.failed = true
+      }
+    },
+    clearMessageFailure(id: string) {
+      const msg = this.messages.find((m) => m.id === id)
+      if (msg) msg.failed = false
+    },
     setStreaming(streaming: boolean) {
       this.streaming = streaming
       if (!streaming) this.lastEventLabel = null
@@ -135,11 +149,26 @@ export const useChatStore = defineStore('chat', {
       this.lastEventLabel = null
       this.lastUpload = null
     },
-    loadThread(threadId: string) {
+    /** Loads a conversation: sets the thread and hydrates the persisted
+     * history from the backend (checkpointer), so conversations survive
+     * logout/login. Falls back to an empty chat on error. */
+    async loadThread(threadId: string) {
       this.threadId = threadId
       this.messages = []
       this.pendingQuestion = null
       this.lastEventLabel = null
+      try {
+        const data = await apiFetch<{ thread_id: string; messages: Array<{ role: 'user' | 'assistant'; content: string }> }>(
+          `/api/chat/history/${encodeURIComponent(threadId)}`,
+        )
+        // The user may have switched threads while the request was in flight.
+        if (this.threadId !== threadId) return
+        for (const m of data.messages ?? []) {
+          this.messages.push({ id: nextMessageId(), role: m.role, content: m.content, events: [] })
+        }
+      } catch {
+        // History unavailable (offline/backend restart): keep the empty chat.
+      }
     },
   },
 })

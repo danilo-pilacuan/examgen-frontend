@@ -42,6 +42,7 @@ const {
   streaming,
   send: streamSend,
   stop,
+  retry: retryStream,
 } = useChatStream({
   onEvent: (event) => {
     if (event.type === 'token') {
@@ -64,7 +65,10 @@ const {
     }
   },
   onError: () => {
-    if (assistantId.value) chat.finishMessage(assistantId.value)
+    // The stream died mid-turn (timeout, proxy cut, backend restart):
+    // the action may have completed server-side, so warn instead of
+    // silently leaving an empty bubble.
+    if (assistantId.value) chat.failMessage(assistantId.value)
     chat.setStreaming(false)
   },
 })
@@ -116,6 +120,13 @@ async function send() {
 function scrollToBottom() {
   listRef.value?.scrollToBottom()
 }
+
+/** Retries the last dropped turn: clears the failure flag and re-sends. */
+function retryLastTurn() {
+  const failed = [...chat.messages].reverse().find((m) => m.failed)
+  if (failed) chat.clearMessageFailure(failed.id)
+  retryStream()
+}
 </script>
 
 <template>
@@ -124,7 +135,7 @@ function scrollToBottom() {
       <span class="dot" />
       <span>{{ contextLabel }}</span>
     </div>
-    <MessageList ref="listRef" :messages="chat.messages" />
+    <MessageList ref="listRef" :messages="chat.messages" @retry="retryLastTurn" />
     <ToolActivity :streaming="chat.streaming" />
     <form class="chat-input" @submit.prevent="send">
       <textarea

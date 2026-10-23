@@ -15,7 +15,7 @@ function newThread() {
 
 function select(threadId: string) {
   selectThread(threadId)
-  chat.loadThread(threadId)
+  void chat.loadThread(threadId)
 }
 
 function remove(threadId: string) {

@@ -44,22 +44,6 @@ function download(url: string) {
   window.open(url, '_blank')
 }
 
-/** Human label for a PDF: "<Name>_A_respondido.pdf" -> "A · with answers",
- * "<Name>_A.pdf" -> "A" (student copy). Falls back to the file name. */
-function pdfLabel(pdf: string): string {
-  const name = pdf.split(/[\\/]/).pop() ?? pdf
-  const stem = name.replace(/\.pdf$/i, '')
-  const answered = stem.endsWith('_respondido')
-  const base = answered ? stem.slice(0, -'_respondido'.length) : stem
-  const version = base.match(/_([A-J])$/)
-  if (version) {
-    return answered
-      ? `${version[1]} · ${t('exams.withAnswers')}`
-      : `${version[1]} · ${t('exams.noAnswers')}`
-  }
-  return name
-}
-
 async function generate() {
   if (!subjects.activeSubjectId || generating.value) return
   generating.value = true
@@ -180,14 +164,14 @@ async function generate() {
             >
               📦 {{ t('exams.zip') }}
             </button>
-            <button
-              v-for="pdf in exam.pdf_paths"
-              :key="pdf"
-              type="button"
-              @click="download(`/output/${pdf.split(/[\\/]/).pop()}`)"
+            <a
+              v-else-if="exam.pdf_paths.length > 0"
+              :href="`/output/${exam.pdf_paths[0].split(/[\\/]/).pop()}`"
+              target="_blank"
+              class="zip"
             >
-              ⬇️ {{ pdfLabel(pdf) }}
-            </button>
+              ⬇️ {{ t('exams.pdf') }}
+            </a>
           </div>
         </li>
       </ul>

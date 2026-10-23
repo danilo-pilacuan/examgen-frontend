@@ -1,6 +1,20 @@
 <script setup lang="ts">
+import { onMounted } from 'vue'
 import ThreadSidebar from '@/components/chat/ThreadSidebar.vue'
 import ChatPanel from '@/components/chat/ChatPanel.vue'
+import { useChatStore } from '@/stores/chat'
+import { useThreadId } from '@/composables/useThreadId'
+
+const chat = useChatStore()
+const { currentThreadId } = useThreadId()
+
+// Restore the last conversation on mount (page reload / re-login):
+// the thread list lives in localStorage, the content in the backend.
+onMounted(() => {
+  if (currentThreadId.value && chat.messages.length === 0) {
+    void chat.loadThread(currentThreadId.value)
+  }
+})
 </script>
 
 <template>

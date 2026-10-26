@@ -372,7 +372,7 @@ onMounted(() => {
 
 .main-view {
   flex: 1;
-  overflow: hidden;
+  overflow-y: auto; /* scroll vertical para vistas que exceden el viewport (BUG-17) */
   background: var(--color-bg);
   display: flex;
   flex-direction: column;

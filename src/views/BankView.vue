@@ -10,6 +10,11 @@ const bank = useBankStore()
 const subjects = useSubjectsStore()
 
 const selected = ref<Question | null>(null)
+const detailRow = ref<HTMLElement | null>(null)
+
+function setDetailRow(el: unknown) {
+  detailRow.value = el instanceof HTMLElement ? el : null
+}
 const filterTopic = ref('')
 const filterDifficulty = ref('')
 const filterBloom = ref('')
@@ -44,6 +49,13 @@ const filtered = computed(() => {
     return true
   })
 })
+
+function selectQuestion(q: Question) {
+  selected.value = selected.value?.id === q.id ? null : q
+  requestAnimationFrame(() => {
+    detailRow.value?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+  })
+}
 
 async function toggleVerification(q: Question) {
   try {
@@ -91,6 +103,7 @@ async function toggleVerification(q: Question) {
       <table v-else class="question-table">
         <thead>
           <tr>
+            <th class="col-expand"><span class="sr-only">{{ t('bank.expandHint') }}</span></th>
             <th>{{ t('questionsTable.topic') }}</th>
             <th>{{ t('questionsTable.type') }}</th>
             <th>{{ t('questionsTable.bloom') }}</th>
@@ -100,54 +113,68 @@ async function toggleVerification(q: Question) {
           </tr>
         </thead>
         <tbody>
-          <tr
-            v-for="q in filtered"
-            :key="q.id"
-            :class="{ selected: selected?.id === q.id }"
-            @click="selected = q"
-          >
-            <td>{{ q.topic }}</td>
-            <td>{{ q.question_type ?? '—' }}</td>
-            <td>{{ q.bloom_level }}</td>
-            <td>{{ q.difficulty }}</td>
-            <td>
-              <span :class="q.verified_by_human ? 'ok' : 'warn'">
-                {{ q.verified_by_human ? `✔ ${t('questionsTable.human')}` : `⏳ ${t('questionsTable.pending')}` }}
-              </span>
-            </td>
-            <td>
-              <button type="button" @click.stop="toggleVerification(q)">
-                {{ q.verified_by_human ? t('bank.remove') : t('bank.verify') }}
-              </button>
-            </td>
-          </tr>
+          <template v-for="q in filtered" :key="q.id">
+            <tr
+              :class="{ selected: selected?.id === q.id, expanded: selected?.id === q.id }"
+              @click="selectQuestion(q)"
+              @keydown.enter.prevent="selectQuestion(q)"
+              @keydown.space.prevent="selectQuestion(q)"
+              :tabindex="0"
+              role="button"
+              :aria-expanded="selected?.id === q.id"
+              :aria-label="t('bank.expandHint') + ': ' + q.topic"
+            >
+              <td class="col-expand">
+                <span class="chevron" aria-hidden="true">▸</span>
+              </td>
+              <td>{{ q.topic }}</td>
+              <td>{{ q.question_type ?? '—' }}</td>
+              <td>{{ q.bloom_level }}</td>
+              <td>{{ q.difficulty }}</td>
+              <td>
+                <span :class="q.verified_by_human ? 'ok' : 'warn'">
+                  {{ q.verified_by_human ? `✔ ${t('questionsTable.human')}` : `⏳ ${t('questionsTable.pending')}` }}
+                </span>
+              </td>
+              <td>
+                <button type="button" @click.stop="toggleVerification(q)">
+                  {{ q.verified_by_human ? t('bank.remove') : t('bank.verify') }}
+                </button>
+              </td>
+            </tr>
+            <tr v-if="selected?.id === q.id" class="detail-row">
+              <td :colspan="7">
+                <div :ref="setDetailRow" class="detail">
+                  <div class="detail-header">
+                    <h3>{{ t('bank.detail') }}</h3>
+                    <button type="button" class="close" :aria-label="t('bank.collapseHint')" @click.stop="selectQuestion(q)">✕</button>
+                  </div>
+                  <p><strong>{{ t('bank.statement') }}:</strong> {{ selected.question_text }}</p>
+                  <ul v-if="selected.options">
+                    <li v-for="(opt, i) in selected.options" :key="i" :class="{ correct: opt.is_correct }">
+                      {{ opt.text }} <span v-if="opt.is_correct">✔</span>
+                    </li>
+                  </ul>
+                  <p v-if="selected.expected_answer">
+                    <strong>{{ t('bank.expectedAnswer') }}:</strong> {{ selected.expected_answer }}
+                  </p>
+                  <p v-if="selected.solution_explanation">
+                    <strong>{{ t('bank.explanation') }}:</strong> {{ selected.solution_explanation }}
+                  </p>
+                  <p v-if="selected.ai_review_notes">
+                    <strong>{{ t('bank.aiNotes') }}:</strong> {{ selected.ai_review_notes }}
+                    <span v-if="selected.ai_review_priority" class="priority">
+                      ({{ selected.ai_review_priority }})
+                    </span>
+                  </p>
+                </div>
+              </td>
+            </tr>
+          </template>
         </tbody>
       </table>
 
-      <div v-if="selected" class="detail">
-        <div class="detail-header">
-          <h3>{{ t('bank.detail') }}</h3>
-          <button type="button" class="close" @click="selected = null">✕</button>
-        </div>
-        <p><strong>{{ t('bank.statement') }}:</strong> {{ selected.question_text }}</p>
-        <ul v-if="selected.options">
-          <li v-for="(opt, i) in selected.options" :key="i" :class="{ correct: opt.is_correct }">
-            {{ opt.text }} <span v-if="opt.is_correct">✔</span>
-          </li>
-        </ul>
-        <p v-if="selected.expected_answer">
-          <strong>{{ t('bank.expectedAnswer') }}:</strong> {{ selected.expected_answer }}
-        </p>
-        <p v-if="selected.solution_explanation">
-          <strong>{{ t('bank.explanation') }}:</strong> {{ selected.solution_explanation }}
-        </p>
-        <p v-if="selected.ai_review_notes">
-          <strong>{{ t('bank.aiNotes') }}:</strong> {{ selected.ai_review_notes }}
-          <span v-if="selected.ai_review_priority" class="priority">
-            ({{ selected.ai_review_priority }})
-          </span>
-        </p>
-      </div>
+      <p v-if="selected" class="detail-fallback-hint">{{ t('bank.detailInlineHint') }}</p>
     </template>
   </div>
 </template>
@@ -193,8 +220,18 @@ async function toggleVerification(q: Question) {
   font-size: 0.9rem;
 }
 
-.question-table tbody tr {
+.question-table tbody tr:not(.detail-row) {
   cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.question-table tbody tr:not(.detail-row):hover {
+  background: rgba(37, 99, 235, 0.05);
+}
+
+.question-table tbody tr:not(.detail-row):focus-visible {
+  outline: 2px solid var(--color-primary, #2563eb);
+  outline-offset: -2px;
 }
 
 .question-table tbody tr.selected {
@@ -209,12 +246,57 @@ async function toggleVerification(q: Question) {
   color: var(--color-warning);
 }
 
+.question-table tbody tr.expanded td {
+  border-bottom-color: transparent;
+}
+
+.col-expand {
+  width: 2rem;
+  text-align: center;
+}
+
+.chevron {
+  display: inline-block;
+  color: var(--color-muted);
+  font-size: 0.9rem;
+  transition: transform 0.15s ease;
+}
+
+tr.expanded .chevron {
+  transform: rotate(90deg);
+  color: var(--color-primary, #2563eb);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.detail-row td {
+  padding: 0;
+  background: var(--color-surface);
+}
+
+.detail-fallback-hint {
+  color: var(--color-muted);
+  font-size: 0.85rem;
+  margin-top: 0.5rem;
+}
+
 .detail {
-  margin-top: 1.5rem;
+  margin: 0.5rem;
   padding: 1rem;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
 }
 
 .detail-header {

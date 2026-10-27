@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useChatStore } from '@/stores/chat'
 import { useSubjectsStore } from '@/stores/subjects'
@@ -121,11 +121,25 @@ function scrollToBottom() {
   listRef.value?.scrollToBottom()
 }
 
-/** Retries the last dropped turn: clears the failure flag and re-sends. */
+/** Retries the last dropped turn: clears the failure flag and re-sends.
+ * RFC-11/ISS-13: when the retried turn completes, re-hydrate the bubble
+ * from the checkpointer history so the retried message shows the turn the
+ * backend actually produced (its widgets too), not just the new tokens. */
 function retryLastTurn() {
   const failed = [...chat.messages].reverse().find((m) => m.failed)
   if (failed) chat.clearMessageFailure(failed.id)
-  retryStream()
+  if (retryStream() && chat.threadId) {
+    const threadId = chat.threadId
+    const stopWatching = watch(
+      streaming,
+      (isStreaming, wasStreaming) => {
+        if (wasStreaming && !isStreaming) {
+          stopWatching()
+          void chat.loadThread(threadId, false)
+        }
+      },
+    )
+  }
 }
 </script>
 

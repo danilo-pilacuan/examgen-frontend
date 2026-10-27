@@ -6,14 +6,18 @@ import { useChatStore } from '@/stores/chat'
 import { useThreadId } from '@/composables/useThreadId'
 
 const chat = useChatStore()
-const { currentThreadId } = useThreadId()
+const { ensureLoaded, refresh, currentThreadId } = useThreadId()
 
 // Restore the last conversation on mount (page reload / re-login):
-// the thread list lives in localStorage, the content in the backend.
+// the thread list now comes from the server (BUG-023 fix), the content
+// from the backend checkpointer.
 onMounted(() => {
-  if (currentThreadId.value && chat.messages.length === 0) {
-    void chat.loadThread(currentThreadId.value)
-  }
+  void refresh().then(() => {
+    if (currentThreadId.value && chat.messages.length === 0) {
+      void chat.loadThread(currentThreadId.value)
+    }
+  })
+  void ensureLoaded()
 })
 </script>
 

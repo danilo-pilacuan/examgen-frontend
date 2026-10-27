@@ -19,7 +19,7 @@ const subjects = useSubjectsStore()
 const material = useMaterialStore()
 const bank = useBankStore()
 const exams = useExamsStore()
-const { touchThread, createThread } = useThreadId()
+const { touchThread, createThread, refresh: refreshThreads } = useThreadId()
 
 const toastShow = ref(false)
 const toastMessage = ref('')
@@ -108,7 +108,10 @@ async function send() {
       subjectId: chat.activeSubjectId,
       subjectName: chat.activeSubjectName,
     })
-    touchThread(threadId, message.slice(0, 40))
+    touchThread(threadId)
+    // Server now has the row with the pinned title + badges; re-sync so a
+    // legacy thread adopted this turn shows up in the sidebar.
+    void refreshThreads()
   } finally {
     if (assistantId.value) chat.finishMessage(assistantId.value)
     chat.setStreaming(false)

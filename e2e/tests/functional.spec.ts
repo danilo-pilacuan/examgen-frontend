@@ -1,6 +1,6 @@
 ﻿/**
- * F1-F6, F11-F12: essential functional certification (QT-010, round 10).
- * Covers the five minimal cases of BL-010 plus the round 9 regressions:
+ * F1-F6, F11-F12: essential functional certification (QT-011, round 11).
+ * Covers the five minimal cases of BL-010 plus the regressions:
  * login, subject activation, bank list + filters + verification toggle,
  * exams list with downloads, route guard.
  *
@@ -8,7 +8,7 @@
  */
 import { test, expect } from '../helpers'
 
-const SUBJECT = process.env.E2E_SUBJECT ?? 'Economía Aplicada — Eva'
+const SUBJECT = process.env.E2E_SUBJECT ?? 'Economia Aplicada - QA11'
 
 test.describe('functional core (F1-F6, F11-F12)', () => {
   test('F1: login shows the professor name and English UI', async ({ page }) => {
@@ -26,7 +26,7 @@ test.describe('functional core (F1-F6, F11-F12)', () => {
 
   test('F1b: login lands in the chat view with the professor name', async ({ authedPage: page }) => {
     await expect(page).not.toHaveURL(/\/login/)
-    await expect(page.getByText('QA Round 10').first()).toBeVisible()
+    await expect(page.getByText('QA Round 11').first()).toBeVisible()
   })
 
   test('F2: bank lists questions with filters and scroll', async ({ authedPage: page }) => {

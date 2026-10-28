@@ -1,14 +1,14 @@
 /**
- * Language certification (QT-010, round 10): the whole system contract is
+ * Language certification (QT-011, round 11): the whole system contract is
  * English (UI, questions, answers, exam PDFs).
  *
  * L1: UI default locale is English on a clean profile.
- * L2: legacy seed questions with Spanish text are surfaced as a known
- *     data limitation (informational, does not fail the suite).
+ * L2: bank question texts must be English-only (the legacy Spanish bank was
+ *     purged in round 11; any Spanish-like hit now FAILS the suite).
  */
 import { test, expect } from '../helpers'
 
-const SUBJECT = process.env.E2E_SUBJECT ?? 'Economía Aplicada — Eva'
+const SUBJECT = process.env.E2E_SUBJECT ?? 'Economia Aplicada - QA11'
 
 test.describe('language contract (L1-L2)', () => {
   test('L1: clean profile renders the full UI in English', async ({ page }) => {
@@ -49,8 +49,10 @@ test.describe('language contract (L1-L2)', () => {
     expect(res.status()).toBe(200)
     const texts = (await res.json()) as Array<{ question_text?: string }>
     const spanish = texts.filter((q) => /[¿¡]|[áéíóúñÁÉÍÓÚÑ]/.test(q.question_text ?? ''))
-    // Report via console for the certification log; do not fail the suite:
-    // the legacy seed bank predates the English contract (BUG-028).
+    // Strict English contract (round 11): the legacy Spanish bank was purged.
+    expect(
+        spanish, `spanish-like questions found: ${spanish.length}`,
+    ).toHaveLength(0)
     console.log(`[lang-report] questions sample=${texts.length} spanish-like=${spanish.length}`)
   })
 })

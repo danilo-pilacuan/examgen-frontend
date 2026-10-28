@@ -40,17 +40,29 @@ function onSubjectChange(event: Event) {
   const subject = subjects.subjects.find((s) => s.id === id) ?? null
   subjects.setActive(id)
   chat.setActiveSubject(id, subject?.name ?? null)
-  // Refresh the reactive panels that depend on the subject.
-  if (id) {
-    bank.fetch(id).catch(() => {})
-    material.fetch(id).catch(() => {})
-    exams.fetch(id).catch(() => {})
-  } else {
-    bank.questions = []
-    material.chunks = []
-    exams.exams = []
-  }
+  // Panel loads are centralized in the activeSubjectId watcher below, which
+  // also covers the programmatic paths (session restore, Activate button).
 }
+
+// Load the subject-scoped panels whenever the active subject changes, no
+// matter which path set it (selector, session restore, Subjects "Activate").
+// BUG-026: header chips showed 0/0 until a manual re-selection because only
+// the combobox handler triggered these fetches.
+watch(
+  () => subjects.activeSubjectId,
+  (id) => {
+    if (id) {
+      bank.fetch(id).catch(() => {})
+      material.fetch(id).catch(() => {})
+      exams.fetch(id).catch(() => {})
+    } else {
+      bank.questions = []
+      material.chunks = []
+      exams.exams = []
+    }
+  },
+  { immediate: true },
+)
 
 async function createSubject() {
   const name = newSubjectName.value.trim()

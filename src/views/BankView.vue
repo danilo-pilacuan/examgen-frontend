@@ -64,6 +64,31 @@ async function toggleVerification(q: Question) {
     // no connection: silently ignore
   }
 }
+
+const exporting = ref(false)
+const exportError = ref('')
+
+function auditFor(q: Question) {
+  return bank.auditFor(q.id)
+}
+
+async function downloadBank() {
+  const subject = subjects.activeSubject
+  if (!subject || exporting.value) return
+  exporting.value = true
+  exportError.value = ''
+  try {
+    const data = await bank.exportBank(subject.id, subject.name)
+    window.alert(
+      t('bank.exportDone', { n: data.total_questions }) +
+        (data.thinking_capture_enabled ? '' : '\n' + t('bank.exportNoThinking')),
+    )
+  } catch {
+    exportError.value = t('bank.exportError')
+  } finally {
+    exporting.value = false
+  }
+}
 </script>
 
 <template>
@@ -94,7 +119,16 @@ async function toggleVerification(q: Question) {
           <option value="ai">{{ t('bank.verifiedAi') }}</option>
           <option value="none">{{ t('bank.unverified') }}</option>
         </select>
+        <button
+          type="button"
+          class="export-btn"
+          :disabled="exporting"
+          @click="downloadBank"
+        >
+          {{ exporting ? t('bank.exporting') : t('bank.download') }}
+        </button>
       </div>
+      <p v-if="exportError" class="export-error">{{ exportError }}</p>
 
       <div v-if="bank.loading" class="loading">{{ t('bank.loading') }}</div>
       <div v-else-if="filtered.length === 0" class="empty">
@@ -166,6 +200,17 @@ async function toggleVerification(q: Question) {
                     <span v-if="selected.ai_review_priority" class="priority">
                       ({{ selected.ai_review_priority }})
                     </span>
+                  </p>
+                  <details v-if="auditFor(selected)?.prompt" class="audit-field">
+                    <summary>{{ t('bank.prompt') }}</summary>
+                    <pre>{{ auditFor(selected)?.prompt }}</pre>
+                  </details>
+                  <details v-if="auditFor(selected)?.thinking" class="audit-field">
+                    <summary>{{ t('bank.thinking') }}</summary>
+                    <pre>{{ auditFor(selected)?.thinking }}</pre>
+                  </details>
+                  <p v-if="!auditFor(selected)?.prompt" class="audit-missing">
+                    {{ t('bank.noPrompt') }}
                   </p>
                 </div>
               </td>
@@ -330,5 +375,54 @@ tr.expanded .chevron {
 .loading {
   color: var(--color-muted);
   padding: 1rem 0;
+}
+
+.export-btn {
+  padding: 0.4rem 0.8rem;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.export-btn:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.export-error {
+  color: var(--color-danger, #dc2626);
+  font-size: 0.85rem;
+  margin: 0 0 0.5rem;
+}
+
+.audit-field {
+  margin: 0.5rem 0;
+  font-size: 0.85rem;
+}
+
+.audit-field summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--color-muted);
+}
+
+.audit-field pre {
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: rgba(15, 23, 42, 0.04);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 0.5rem;
+  margin: 0.4rem 0 0;
+  max-height: 16rem;
+  overflow-y: auto;
+  font-size: 0.78rem;
+}
+
+.audit-missing {
+  color: var(--color-muted);
+  font-size: 0.8rem;
 }
 </style>

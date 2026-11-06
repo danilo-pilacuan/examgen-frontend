@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { useExamsStore } from '@/stores/exams'
 import { useSubjectsStore } from '@/stores/subjects'
 import { apiFetch } from '@/api/http'
+import type { BloomLevel, Difficulty, QuestionType } from '@/types/domain'
 
 const { t } = useI18n()
 const exams = useExamsStore()
@@ -31,6 +32,47 @@ const DIFFICULTY_PRESETS = [
 ]
 const difficultyPreset = ref(0)
 
+// Question types the professor may include (third review, Felipe).
+const QUESTION_TYPES: { value: QuestionType; key: string }[] = [
+  { value: 'multiple_choice', key: 'multipleChoice' },
+  { value: 'true_false', key: 'trueFalse' },
+  { value: 'short_answer', key: 'shortAnswer' },
+  { value: 'essay', key: 'essay' },
+  { value: 'fill_in_blank', key: 'fillInBlank' },
+  { value: 'select_all', key: 'selectAll' },
+]
+const allowedTypes = ref<QuestionType[]>(QUESTION_TYPES.map((t) => t.value))
+
+// Extended blueprint customization (capacidad extendida): custom
+// distributions and retrieval config instead of the presets.
+const showAdvanced = ref(false)
+const customBloom = ref<Record<BloomLevel, number>>({ ...BLOOM_PRESETS[0].dist })
+const customDifficulty = ref<Record<Difficulty, number>>({ ...DIFFICULTY_PRESETS[0].dist })
+const useRag = ref(true)
+const topK = ref(3)
+const minScore = ref(0.15)
+
+function toggleType(value: QuestionType) {
+  const i = allowedTypes.value.indexOf(value)
+  if (i >= 0) allowedTypes.value.splice(i, 1)
+  else allowedTypes.value.push(value)
+}
+
+function applyCustomBloom() {
+  // Normalize the custom distribution so it sums to ~1.0 (backend tolerance).
+  const entries = Object.entries(customBloom.value) as [BloomLevel, number][]
+  const total = entries.reduce((s, [, v]) => s + (Number(v) || 0), 0)
+  if (total <= 0) return
+  for (const [k, v] of entries) customBloom.value[k] = Math.round(((Number(v) || 0) / total) * 100) / 100
+}
+
+function applyCustomDifficulty() {
+  const entries = Object.entries(customDifficulty.value) as [Difficulty, number][]
+  const total = entries.reduce((s, [, v]) => s + (Number(v) || 0), 0)
+  if (total <= 0) return
+  for (const [k, v] of entries) customDifficulty.value[k] = Math.round(((Number(v) || 0) / total) * 100) / 100
+}
+
 // Reactive: the exam list follows the subject selected in the header.
 watch(
   () => subjects.activeSubjectId,
@@ -47,11 +89,19 @@ function download(url: string) {
 
 async function generate() {
   if (!subjects.activeSubjectId || generating.value) return
+  if (allowedTypes.value.length === 0) {
+    generateError.value = t('exams.noTypesError')
+    return
+  }
   generating.value = true
   generateError.value = ''
   try {
-    const bloom = BLOOM_PRESETS[bloomPreset.value].dist
-    const diff = DIFFICULTY_PRESETS[difficultyPreset.value].dist
+    if (showAdvanced.value) {
+      applyCustomBloom()
+      applyCustomDifficulty()
+    }
+    const bloom = showAdvanced.value ? { ...customBloom.value } : BLOOM_PRESETS[bloomPreset.value].dist
+    const diff = showAdvanced.value ? { ...customDifficulty.value } : DIFFICULTY_PRESETS[difficultyPreset.value].dist
     await apiFetch('/exams/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -63,7 +113,13 @@ async function generate() {
           bloom_distribution: bloom,
           difficulty_distribution: diff,
           topics_weight: { general: 1.0 },
+          allowed_question_types: allowedTypes.value,
           estimated_duration_minutes: duration.value,
+          retrieval: {
+            use_rag: useRag.value,
+            top_k: topK.value,
+            min_score: minScore.value,
+          },
           metadata: {
             title: title.value || t('exams.defaultTitle'),
             name: title.value || t('exams.defaultTitle'),
@@ -141,6 +197,59 @@ async function generate() {
             </select>
           </div>
         </div>
+        <div class="field">
+          <label>{{ t('exams.questionTypes') }}</label>
+          <div class="type-checkboxes" role="group" :aria-label="t('exams.questionTypes')">
+            <label v-for="qt in QUESTION_TYPES" :key="qt.value" class="type-checkbox">
+              <input
+                type="checkbox"
+                :checked="allowedTypes.includes(qt.value)"
+                @change="toggleType(qt.value)"
+              />
+              {{ t(`exams.types.${qt.key}`) }}
+            </label>
+          </div>
+          <p v-if="allowedTypes.length === 0" class="form-error">⚠️ {{ t('exams.noTypesError') }}</p>
+        </div>
+        <details class="advanced" :open="showAdvanced" @toggle="showAdvanced = ($event.target as HTMLDetailsElement).open">
+          <summary>{{ t('exams.advancedTitle') }}</summary>
+          <div class="advanced-body">
+            <div class="field-row">
+              <div class="field">
+                <label>{{ t('exams.bloomCustom') }}</label>
+                <div class="dist-grid">
+                  <label v-for="b in (Object.keys(customBloom) as BloomLevel[])" :key="b">
+                    {{ b }} <input v-model.number="customBloom[b]" type="number" min="0" max="1" step="0.05" />
+                  </label>
+                </div>
+              </div>
+              <div class="field">
+                <label>{{ t('exams.difficultyCustom') }}</label>
+                <div class="dist-grid">
+                  <label v-for="d in (Object.keys(customDifficulty) as Difficulty[])" :key="d">
+                    {{ d }} <input v-model.number="customDifficulty[d]" type="number" min="0" max="1" step="0.05" />
+                  </label>
+                </div>
+              </div>
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label class="checkbox-line">
+                  <input v-model="useRag" type="checkbox" />
+                  {{ t('exams.useRag') }}
+                </label>
+              </div>
+              <div class="field">
+                <label>{{ t('exams.topK') }}</label>
+                <input v-model.number="topK" type="number" min="1" max="20" :disabled="!useRag" />
+              </div>
+              <div class="field">
+                <label>{{ t('exams.minScore') }}</label>
+                <input v-model.number="minScore" type="number" min="0" max="1" step="0.05" :disabled="!useRag" />
+              </div>
+            </div>
+          </div>
+        </details>
         <p v-if="generateError" class="form-error">⚠️ {{ generateError }}</p>
         <button type="submit" class="submit" :disabled="generating">
           {{ generating ? t('exams.generating') : t('exams.generateBtn') }}
@@ -261,6 +370,71 @@ async function generate() {
   margin: 0;
   color: var(--color-danger);
   font-size: 0.85rem;
+}
+
+.type-checkboxes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+}
+
+.type-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.85rem;
+  color: var(--color-text, inherit);
+  cursor: pointer;
+}
+
+.advanced {
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+}
+
+.advanced summary {
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-muted);
+}
+
+.advanced-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding-top: 0.75rem;
+}
+
+.dist-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.8rem;
+  color: var(--color-muted);
+}
+
+.dist-grid label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.dist-grid input {
+  width: 5rem;
+  padding: 0.3rem 0.4rem;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+}
+
+.checkbox-line {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  cursor: pointer;
 }
 
 .exam-list {

@@ -47,6 +47,7 @@ export interface Question {
   points: number | null
   verified_by_human: boolean
   verified_by_ai: boolean
+  verified_at?: string | null
   ai_review_notes: string | null
   ai_review_priority: 'high' | 'medium' | 'low' | null
   source: string
@@ -82,6 +83,7 @@ export interface ExamBlueprint {
   bloom_distribution: Partial<Record<BloomLevel, number>>
   difficulty_distribution: Partial<Record<Difficulty, number>>
   topics_weight: Record<string, number>
+  allowed_question_types?: QuestionType[]
   estimated_duration_minutes: number
   metadata?: {
     title?: string

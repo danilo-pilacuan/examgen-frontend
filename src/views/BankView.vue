@@ -25,6 +25,12 @@ const BLOOM_LEVELS = ['remember', 'understand', 'apply', 'analyze', 'evaluate', 
 const DIFFICULTIES = ['easy', 'medium', 'hard']
 const TYPES = ['multiple_choice', 'true_false', 'short_answer', 'essay', 'fill_in_blank']
 
+function formatDate(value: string | null | undefined): string {
+  if (!value) return '—'
+  const d = new Date(value)
+  return Number.isNaN(d.getTime()) ? '—' : d.toLocaleString()
+}
+
 // Reactive: the bank follows the subject selected in the header.
 watch(
   () => subjects.activeSubjectId,
@@ -142,6 +148,8 @@ async function downloadBank() {
             <th>{{ t('questionsTable.type') }}</th>
             <th>{{ t('questionsTable.bloom') }}</th>
             <th>{{ t('questionsTable.difficulty') }}</th>
+            <th>{{ t('questionsTable.createdAt') }}</th>
+            <th>{{ t('questionsTable.verifiedAt') }}</th>
             <th>{{ t('bank.verification') }}</th>
             <th></th>
           </tr>
@@ -165,6 +173,8 @@ async function downloadBank() {
               <td>{{ q.question_type ?? '—' }}</td>
               <td>{{ q.bloom_level }}</td>
               <td>{{ q.difficulty }}</td>
+              <td class="col-date">{{ formatDate(q.created_at) }}</td>
+              <td class="col-date">{{ formatDate(q.verified_at) }}</td>
               <td>
                 <span :class="q.verified_by_human ? 'ok' : 'warn'">
                   {{ q.verified_by_human ? `✔ ${t('questionsTable.human')}` : `⏳ ${t('questionsTable.pending')}` }}
@@ -177,7 +187,7 @@ async function downloadBank() {
               </td>
             </tr>
             <tr v-if="selected?.id === q.id" class="detail-row">
-              <td :colspan="7">
+              <td :colspan="9">
                 <div :ref="setDetailRow" class="detail">
                   <div class="detail-header">
                     <h3>{{ t('bank.detail') }}</h3>
@@ -298,6 +308,12 @@ async function downloadBank() {
 .col-expand {
   width: 2rem;
   text-align: center;
+}
+
+.col-date {
+  white-space: nowrap;
+  font-size: 0.8rem;
+  color: var(--color-muted);
 }
 
 .chevron {

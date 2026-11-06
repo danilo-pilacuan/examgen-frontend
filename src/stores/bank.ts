@@ -45,13 +45,13 @@ export const useBankStore = defineStore('bank', {
       return { prompt: q.prompt, thinking: q.thinking }
     },
     async setHumanVerification(questionId: string, verified: boolean) {
-      await apiFetch(`/questions/${questionId}/verification`, {
+      const updated = await apiFetch<Question>(`/questions/${questionId}/verification`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ verified: verified }),
       })
-      const q = this.questions.find((q) => q.id === questionId)
-      if (q) q.verified_by_human = verified
+      const i = this.questions.findIndex((q) => q.id === questionId)
+      if (i >= 0) this.questions[i] = updated
     },
     /** Downloads the bank with prompt/thinking audit fields as a JSON file. */
     async exportBank(subjectId: string, subjectName: string) {

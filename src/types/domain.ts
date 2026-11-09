@@ -47,10 +47,27 @@ export interface Question {
   points: number | null
   verified_by_human: boolean
   verified_by_ai: boolean
+  verified_at?: string | null
   ai_review_notes: string | null
   ai_review_priority: 'high' | 'medium' | 'low' | null
   source: string
   created_at: string
+}
+
+/** Question enriched with its generator LLM audit fields (bank export). */
+export interface BankExportQuestion extends Question {
+  prompt: string | null
+  thinking: string | null
+  generation_model: string | null
+}
+
+/** Downloadable question bank (GET /subjects/{id}/questions/export). */
+export interface BankExport {
+  subject: string
+  exported_at: string
+  total_questions: number
+  thinking_capture_enabled: boolean
+  questions: BankExportQuestion[]
 }
 
 /** Registered subject. */
@@ -66,6 +83,7 @@ export interface ExamBlueprint {
   bloom_distribution: Partial<Record<BloomLevel, number>>
   difficulty_distribution: Partial<Record<Difficulty, number>>
   topics_weight: Record<string, number>
+  allowed_question_types?: QuestionType[]
   estimated_duration_minutes: number
   metadata?: {
     title?: string

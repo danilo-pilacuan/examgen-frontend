@@ -9,11 +9,31 @@ interface SubjectsState {
   activeSubjectId: string | null
 }
 
+const ACTIVE_SUBJECT_KEY = 'mvp_active_subject'
+
+/** Restores the persisted active subject (RFC-10/ISS-17: survives F5). */
+function loadActiveSubjectId(): string | null {
+  try {
+    return localStorage.getItem(ACTIVE_SUBJECT_KEY)
+  } catch {
+    return null
+  }
+}
+
+function saveActiveSubjectId(id: string | null) {
+  try {
+    if (id) localStorage.setItem(ACTIVE_SUBJECT_KEY, id)
+    else localStorage.removeItem(ACTIVE_SUBJECT_KEY)
+  } catch {
+    // storage unavailable: in-memory only
+  }
+}
+
 export const useSubjectsStore = defineStore('subjects', {
   state: (): SubjectsState => ({
     subjects: [],
     loading: false,
-    activeSubjectId: null,
+    activeSubjectId: loadActiveSubjectId(),
   }),
   getters: {
     activeSubject(state): Subject | null {
@@ -31,6 +51,7 @@ export const useSubjectsStore = defineStore('subjects', {
     },
     setActive(id: string | null) {
       this.activeSubjectId = id
+      saveActiveSubjectId(id)
     },
   },
 })

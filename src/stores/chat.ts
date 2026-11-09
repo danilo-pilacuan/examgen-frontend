@@ -151,18 +151,24 @@ export const useChatStore = defineStore('chat', {
     },
     /** Loads a conversation: sets the thread and hydrates the persisted
      * history from the backend (checkpointer), so conversations survive
-     * logout/login. Falls back to an empty chat on error. */
-    async loadThread(threadId: string) {
-      this.threadId = threadId
-      this.messages = []
-      this.pendingQuestion = null
-      this.lastEventLabel = null
+     * logout/login. Falls back to an empty chat on error.
+     * `replaceExisting=false` (RFC-11/ISS-13) appends the history to the
+     * current messages instead of clearing them: used after a Retry of a
+     * dropped turn, so the retried bubble shows the completed turn from
+     * the checkpointer (including widgets it produced). */
+    async loadThread(threadId: string, replaceExisting = true) {
+      if (replaceExisting) {
+        this.threadId = threadId
+        this.messages = []
+        this.pendingQuestion = null
+        this.lastEventLabel = null
+      }
       try {
         const data = await apiFetch<{ thread_id: string; messages: Array<{ role: 'user' | 'assistant'; content: string }> }>(
           `/api/chat/history/${encodeURIComponent(threadId)}`,
         )
         // The user may have switched threads while the request was in flight.
-        if (this.threadId !== threadId) return
+        if (replaceExisting && this.threadId !== threadId) return
         for (const m of data.messages ?? []) {
           this.messages.push({ id: nextMessageId(), role: m.role, content: m.content, events: [] })
         }

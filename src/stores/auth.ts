@@ -1,6 +1,7 @@
 /** Auth store: JWT session, current user, login/register/logout. */
 import { defineStore } from 'pinia'
 import { apiFetch, setAuthToken } from '@/api/http'
+import { useThreadId } from '@/composables/useThreadId'
 
 export interface AuthUser {
   id: string
@@ -84,6 +85,7 @@ export const useAuthStore = defineStore('auth', {
         this.token = res.access_token
         this.user = res.user
         this._persist()
+        useThreadId().invalidate()
       } catch (e) {
         this.error = e instanceof Error ? e.message : 'Login failed'
         throw e
@@ -103,6 +105,7 @@ export const useAuthStore = defineStore('auth', {
         this.token = res.access_token
         this.user = res.user
         this._persist()
+        useThreadId().invalidate()
       } catch (e) {
         this.error = e instanceof Error ? e.message : 'Registration failed'
         throw e
@@ -114,6 +117,8 @@ export const useAuthStore = defineStore('auth', {
       this.token = null
       this.user = null
       this._persist()
+      // Drop the in-memory thread list so the next login starts clean.
+      useThreadId().invalidate()
     },
   },
 })

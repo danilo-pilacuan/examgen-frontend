@@ -1,13 +1,16 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useExamsStore } from '@/stores/exams'
 import { useSubjectsStore } from '@/stores/subjects'
+import { useBankStore } from '@/stores/bank'
 import { apiFetch } from '@/api/http'
+import type { BloomLevel, Difficulty, QuestionType } from '@/types/domain'
 
 const { t } = useI18n()
 const exams = useExamsStore()
 const subjects = useSubjectsStore()
+const bank = useBankStore()
 
 const showForm = ref(false)
 const generating = ref(false)
@@ -17,19 +20,132 @@ const numVersions = ref(1)
 const duration = ref(90)
 const title = ref('')
 
-const BLOOM_PRESETS = [
-  { key: 'balanced', dist: { remember: 0.2, understand: 0.2, apply: 0.2, analyze: 0.2, evaluate: 0.1, create: 0.1 } },
-  { key: 'basic', dist: { remember: 0.4, understand: 0.3, apply: 0.2, analyze: 0.1, evaluate: 0, create: 0 } },
-  { key: 'advanced', dist: { remember: 0.1, understand: 0.1, apply: 0.2, analyze: 0.2, evaluate: 0.2, create: 0.2 } },
-]
-const bloomPreset = ref(0)
+// Bloom and difficulty as real-level checkboxes (third review, Felipe):
+// uniform distribution over the checked levels, no preset selects.
+const BLOOM_LEVELS: BloomLevel[] = ['remember', 'understand', 'apply', 'analyze', 'evaluate', 'create']
+const DIFFICULTY_LEVELS: Difficulty[] = ['easy', 'medium', 'hard']
+const selectedBloom = ref<BloomLevel[]>([...BLOOM_LEVELS])
+const selectedDifficulty = ref<Difficulty[]>([...DIFFICULTY_LEVELS])
 
-const DIFFICULTY_PRESETS = [
-  { key: 'balanced', dist: { easy: 0.34, medium: 0.33, hard: 0.33 } },
-  { key: 'easy', dist: { easy: 0.6, medium: 0.3, hard: 0.1 } },
-  { key: 'hard', dist: { easy: 0.1, medium: 0.3, hard: 0.6 } },
+function toggleLevel<T>(list: T[], value: T) {
+  const i = list.indexOf(value)
+  if (i >= 0) list.splice(i, 1)
+  else list.push(value)
+}
+function toggleBloom(value: BloomLevel) {
+  toggleLevel(selectedBloom.value, value)
+}
+function toggleDifficulty(value: Difficulty) {
+  toggleLevel(selectedDifficulty.value, value)
+}
+
+// Normalize selected levels to a distribution summing ~1.0 (backend
+// tolerance 0.98-1.02); empty selection falls back to uniform over all.
+function levelsToDist<T extends string>(levels: T[], all: T[]): Record<T, number> {
+  const picked = levels.length > 0 ? levels : all
+  const share = Math.round((1 / picked.length) * 100) / 100
+  const dist = {} as Record<T, number>
+  let acc = 0
+  for (const k of picked) {
+    dist[k] = share
+    acc += share
+  }
+  // Add the rounding remainder to the first key so the sum is exactly 1.0.
+  const first = picked[0]
+  dist[first] = Math.round((dist[first] + (1 - acc)) * 100) / 100
+  return dist
+}
+
+const bloomDist = computed<Record<BloomLevel, number>>(() => levelsToDist(selectedBloom.value, BLOOM_LEVELS))
+const difficultyDist = computed<Record<Difficulty, number>>(() => levelsToDist(selectedDifficulty.value, DIFFICULTY_LEVELS))
+
+// Question types the professor may include (third review, Felipe).
+const QUESTION_TYPES: { value: QuestionType; key: string }[] = [
+  { value: 'multiple_choice', key: 'multipleChoice' },
+  { value: 'true_false', key: 'trueFalse' },
+  { value: 'short_answer', key: 'shortAnswer' },
+  { value: 'essay', key: 'essay' },
+  { value: 'fill_in_blank', key: 'fillInBlank' },
+  { value: 'select_all', key: 'selectAll' },
 ]
-const difficultyPreset = ref(0)
+const allowedTypes = ref<QuestionType[]>(QUESTION_TYPES.map((t) => t.value))
+
+// Advanced blueprint: questions per topic with numeric selectors instead of
+// abstract weight distributions (third review, Felipe).
+const showAdvanced = ref(false)
+const topicCounts = ref<Record<string, number>>({})
+const topicsError = ref('')
+const useRag = ref(true)
+const topK = ref(3)
+const minScore = ref(0.15)
+
+const bankTopics = computed<string[]>(() => {
+  const topics = new Set<string>()
+  for (const q of bank.questions) {
+    if (q.topic) topics.add(q.topic)
+  }
+  return [...topics].sort((a, b) => a.localeCompare(b))
+})
+
+// Load the bank of the active subject to list its real topics. Resets the
+// per-topic counts when the subject changes.
+watch(
+  () => subjects.activeSubjectId,
+  async (id) => {
+    topicCounts.value = {}
+    topicsError.value = ''
+    bank.questions = []
+    if (!id) return
+    try {
+      await bank.fetch(id)
+    } catch {
+      topicsError.value = t('exams.topicsLoadError')
+    }
+  },
+  { immediate: true },
+)
+
+function setTopicCount(topic: string, value: number | null) {
+  const n = Math.max(0, Math.min(50, Math.trunc(Number(value) || 0)))
+  topicCounts.value[topic] = n
+}
+
+function topicSum(): number {
+  return Object.values(topicCounts.value).reduce((s, v) => s + (Number(v) || 0), 0)
+}
+
+function topicTotalExceeds(): boolean {
+  return topicSum() > totalQuestions.value
+}
+
+function applyTopicCounts() {
+  // Convert per-topic counts into weights summing ~1.0 for the blueprint
+  // contract (planner converts them back to counts).
+  const sum = topicSum()
+  if (sum <= 0) {
+    topicsError.value = ''
+    return { general: 1.0 }
+  }
+  const weights: Record<string, number> = {}
+  let acc = 0
+  const topics = Object.keys(topicCounts.value).filter((k) => (Number(topicCounts.value[k]) || 0) > 0)
+  for (const k of topics) {
+    const w = Math.round(((Number(topicCounts.value[k]) || 0) / sum) * 100) / 100
+    weights[k] = w
+    acc += w
+  }
+  if (topics.length > 0) {
+    const first = topics[0]
+    weights[first] = Math.round((weights[first] + (1 - acc)) * 100) / 100
+  }
+  return weights
+}
+
+function toggleType(value: QuestionType) {
+  const i = allowedTypes.value.indexOf(value)
+  if (i >= 0) allowedTypes.value.splice(i, 1)
+  else allowedTypes.value.push(value)
+}
 
 // Reactive: the exam list follows the subject selected in the header.
 watch(
@@ -47,11 +163,18 @@ function download(url: string) {
 
 async function generate() {
   if (!subjects.activeSubjectId || generating.value) return
+  if (allowedTypes.value.length === 0) {
+    generateError.value = t('exams.noTypesError')
+    return
+  }
+  if (topicTotalExceeds()) {
+    generateError.value = t('exams.perTopicTotalError', { sum: topicSum(), total: totalQuestions.value })
+    return
+  }
   generating.value = true
   generateError.value = ''
   try {
-    const bloom = BLOOM_PRESETS[bloomPreset.value].dist
-    const diff = DIFFICULTY_PRESETS[difficultyPreset.value].dist
+    const topicsWeight = showAdvanced.value ? applyTopicCounts() : { general: 1.0 }
     await apiFetch('/exams/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -60,10 +183,16 @@ async function generate() {
         blueprint: {
           subject_id: subjects.activeSubjectId,
           total_questions: totalQuestions.value,
-          bloom_distribution: bloom,
-          difficulty_distribution: diff,
-          topics_weight: { general: 1.0 },
+          bloom_distribution: bloomDist.value,
+          difficulty_distribution: difficultyDist.value,
+          topics_weight: topicsWeight,
+          allowed_question_types: allowedTypes.value,
           estimated_duration_minutes: duration.value,
+          retrieval: {
+            use_rag: useRag.value,
+            top_k: topK.value,
+            min_score: minScore.value,
+          },
           metadata: {
             title: title.value || t('exams.defaultTitle'),
             name: title.value || t('exams.defaultTitle'),
@@ -123,24 +252,92 @@ async function generate() {
             <input v-model.number="duration" type="number" min="10" max="300" />
           </div>
         </div>
-        <div class="field-row">
-          <div class="field">
-            <label>{{ t('exams.bloom') }}</label>
-            <select v-model.number="bloomPreset">
-              <option v-for="(p, i) in BLOOM_PRESETS" :key="i" :value="i">
-                {{ t(`exams.presets.${p.key}`) }}
-              </option>
-            </select>
-          </div>
-          <div class="field">
-            <label>{{ t('exams.difficulty') }}</label>
-            <select v-model.number="difficultyPreset">
-              <option v-for="(p, i) in DIFFICULTY_PRESETS" :key="i" :value="i">
-                {{ t(`exams.presets.${p.key}`) }}
-              </option>
-            </select>
+        <div class="field">
+          <label>{{ t('exams.bloom') }}</label>
+          <div class="type-checkboxes" role="group" :aria-label="t('exams.bloom')">
+            <label v-for="b in BLOOM_LEVELS" :key="b" class="type-checkbox">
+              <input
+                type="checkbox"
+                :checked="selectedBloom.includes(b)"
+                @change="toggleBloom(b)"
+              />
+              {{ t(`exams.bloomLevels.${b}`) }}
+            </label>
           </div>
         </div>
+        <div class="field">
+          <label>{{ t('exams.difficulty') }}</label>
+          <div class="type-checkboxes" role="group" :aria-label="t('exams.difficulty')">
+            <label v-for="d in DIFFICULTY_LEVELS" :key="d" class="type-checkbox">
+              <input
+                type="checkbox"
+                :checked="selectedDifficulty.includes(d)"
+                @change="toggleDifficulty(d)"
+              />
+              {{ t(`exams.difficultyLevels.${d}`) }}
+            </label>
+          </div>
+        </div>
+        <div class="field">
+          <label>{{ t('exams.questionTypes') }}</label>
+          <div class="type-checkboxes" role="group" :aria-label="t('exams.questionTypes')">
+            <label v-for="qt in QUESTION_TYPES" :key="qt.value" class="type-checkbox">
+              <input
+                type="checkbox"
+                :checked="allowedTypes.includes(qt.value)"
+                @change="toggleType(qt.value)"
+              />
+              {{ t(`exams.types.${qt.key}`) }}
+            </label>
+          </div>
+          <p v-if="allowedTypes.length === 0" class="form-error">⚠️ {{ t('exams.noTypesError') }}</p>
+        </div>
+        <details class="advanced" :open="showAdvanced" @toggle="showAdvanced = ($event.target as HTMLDetailsElement).open">
+          <summary>{{ t('exams.advancedTitle') }}</summary>
+          <div class="advanced-body">
+            <div class="field">
+              <label>{{ t('exams.perTopic') }}</label>
+              <p v-if="bankTopics.length === 0" class="advanced-hint">
+                {{ topicsError || t('exams.topicsEmpty') }}
+              </p>
+              <div v-else class="dist-grid">
+                <label v-for="topic in bankTopics" :key="topic">
+                  <span class="topic-name">{{ topic }}</span>
+                  <input
+                    :value="topicCounts[topic] || 0"
+                    type="number"
+                    min="0"
+                    max="50"
+                    step="1"
+                    @change="setTopicCount(topic, ($event.target as HTMLInputElement).valueAsNumber)"
+                  />
+                </label>
+              </div>
+              <p v-if="topicTotalExceeds()" class="form-error">
+                ⚠️ {{ t('exams.perTopicTotalError', { sum: topicSum(), total: totalQuestions }) }}
+              </p>
+              <p v-else-if="topicSum() > 0" class="advanced-hint">
+                {{ t('exams.perTopicSum', { sum: topicSum(), total: totalQuestions }) }}
+              </p>
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label class="checkbox-line">
+                  <input v-model="useRag" type="checkbox" />
+                  {{ t('exams.useRag') }}
+                </label>
+              </div>
+              <div class="field">
+                <label>{{ t('exams.topK') }}</label>
+                <input v-model.number="topK" type="number" min="1" max="20" :disabled="!useRag" />
+              </div>
+              <div class="field">
+                <label>{{ t('exams.minScore') }}</label>
+                <input v-model.number="minScore" type="number" min="0" max="1" step="0.01" :disabled="!useRag" />
+              </div>
+            </div>
+          </div>
+        </details>
         <p v-if="generateError" class="form-error">⚠️ {{ generateError }}</p>
         <button type="submit" class="submit" :disabled="generating">
           {{ generating ? t('exams.generating') : t('exams.generateBtn') }}
@@ -261,6 +458,81 @@ async function generate() {
   margin: 0;
   color: var(--color-danger);
   font-size: 0.85rem;
+}
+
+.type-checkboxes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+}
+
+.type-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.85rem;
+  color: var(--color-text, inherit);
+  cursor: pointer;
+}
+
+.advanced {
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+}
+
+.advanced summary {
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-muted);
+}
+
+.advanced-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding-top: 0.75rem;
+}
+
+.dist-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.8rem;
+  color: var(--color-muted);
+}
+
+.dist-grid label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.topic-name {
+  overflow-wrap: anywhere;
+}
+
+.advanced-hint {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--color-muted);
+}
+
+.dist-grid input {
+  width: 5rem;
+  padding: 0.3rem 0.4rem;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+}
+
+.checkbox-line {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  cursor: pointer;
 }
 
 .exam-list {
